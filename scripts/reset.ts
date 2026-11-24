@@ -53,8 +53,10 @@ for (const id of [fakeAdapter.featuredStripId, REFUSED_ID]) {
 const featured = results.get(fakeAdapter.featuredStripId);
 if (featured) {
   check(
-    featured.accepted,
-    `${fakeAdapter.featuredStripId}: accepted, ${featured.heartRateBpm !== null ? featured.heartRateBpm.toFixed(0) : "no"} bpm, mean RR ${featured.meanRrMs !== null ? featured.meanRrMs.toFixed(0) : "none"} ms`
+    featured.accepted && featured.heartRateBpm !== null,
+    featured.accepted
+      ? `${fakeAdapter.featuredStripId}: accepted, ${featured.heartRateBpm !== null ? featured.heartRateBpm.toFixed(0) : "no"} bpm, mean RR ${featured.meanRrMs !== null ? featured.meanRrMs.toFixed(0) : "none"} ms, grid ${featured.pxPerMmX} px/mm`
+      : `${fakeAdapter.featuredStripId}: expected accepted, got refused (quality ${featured.quality.toFixed(2)}, grid ${featured.pxPerMmX} px/mm): ${featured.reasons.join(" ")}`
   );
 }
 const refused = results.get(REFUSED_ID);
