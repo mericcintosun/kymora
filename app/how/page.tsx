@@ -63,8 +63,7 @@ export default function HowPage() {
       </p>
 
       <div className="mt-10">
-        <SceneSlot
-          n={3}
+        <SceneSlot n={3}
           alt="Four sand-coloured panels stepping down like rock strata: a tilted ECG photo, the same strip straightened with grid ticks, a green trace with the grid gone, and red dots on each heartbeat"
           width={960}
           height={640}
@@ -118,11 +117,11 @@ export default function HowPage() {
           />
         )}
         <BenchPanel seed={bench.seed} n={bench.n} />
-        <Card>
-          <CardHeader>
-            <CardTitle>Reproduce it</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
+        <details className="rounded-md border border-border bg-surface">
+          <summary className="flex min-h-11 cursor-pointer items-center px-4 py-2.5 font-medium">
+            Reproduce the tables on your machine
+          </summary>
+          <div className="space-y-2 border-t border-border p-4 text-sm">
             <p>
               <code>npm install</code> then <code>npm run eval</code> (seed 42, 200 strips, writes{" "}
               <code>eval/results.json</code>). Change the seed or size with <code>npm run eval -- --seed 7 --n 500</code>.
@@ -136,8 +135,8 @@ export default function HowPage() {
               Every threshold the pipeline uses lives in the exported <code>CONFIG</code> object and is printed with the
               results.
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </details>
       </section>
 
       <section className="mt-16 grid gap-6 md:grid-cols-2">

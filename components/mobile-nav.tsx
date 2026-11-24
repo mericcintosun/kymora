@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { NavLink } from "@/components/nav-links";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 /**
@@ -30,15 +31,17 @@ export function MobileNav({ links, cta }: { links: NavLink[]; cta: NavLink }) {
 
   return (
     <>
-      <button
+      <Button
         type="button"
+        variant="outline"
+        size="sm"
         aria-expanded={open}
         aria-controls="kymora-mobile-nav"
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md border border-border px-3 text-sm font-medium text-foreground hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:hidden"
+        className="min-w-11 md:hidden"
       >
         {open ? "Close" : "Menu"}
-      </button>
+      </Button>
       <div
         id="kymora-mobile-nav"
         hidden={!open}

@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { HeldOutResults } from "@/lib/types";
 
@@ -171,22 +172,22 @@ export function FigureTween({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="font-display text-lg font-semibold">Kymora against the baseline</p>
         <div role="group" aria-label="Method shown in the figures" className="flex flex-wrap gap-2">
-          <button
+          <Button
             type="button"
+            variant={shown === "baseline" ? "default" : "outline"}
             aria-pressed={shown === "baseline"}
             onClick={() => setShown("baseline")}
-            className="inline-flex min-h-11 items-center rounded-md border border-border px-4 text-sm font-medium hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring aria-pressed:border-ink aria-pressed:bg-ink aria-pressed:text-primary-foreground"
           >
             Show baseline
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant={shown === "kymora" ? "default" : "outline"}
             aria-pressed={shown === "kymora"}
             onClick={() => setShown("kymora")}
-            className="inline-flex min-h-11 items-center rounded-md border border-border px-4 text-sm font-medium hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground"
           >
             Show Kymora
-          </button>
+          </Button>
         </div>
       </div>
       <p className="sr-only" aria-live="polite">
