@@ -1,0 +1,5 @@
+# Held-out set builder (scripts/ptbxl/make_set.py). The web app needs none of this.
+wfdb>=4.1
+numpy>=1.24
+matplotlib>=3.7
+pillow>=10.0

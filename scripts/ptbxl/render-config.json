@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "paperSpeedMmPerS": 25,
+  "gainMmPerMv": 10,
+  "referenceFs": 100,
+  "minPeaks": 3,
+  "paperRgb": [251, 243, 238],
+  "minorRgb": [244, 196, 196],
+  "majorRgb": [228, 140, 146],
+  "inkRgb": [38, 30, 34],
+  "degrade": {
+    "tiltDeg": [-5, 5],
+    "blurPx": [0, 1.2],
+    "shadow": [0, 0.5],
+    "jpegQuality": [60, 90]
+  },
+  "matplotlib": {
+    "pxPerMm": [5.5, 9],
+    "heightMm": 40,
+    "baselineMm": 25,
+    "traceStartS": 0.2,
+    "rightMarginS": 0.2,
+    "minorLineMm": 0.08,
+    "majorLineMm": 0.16,
+    "inkLineMm": 0.3
+  },
+  "ecgkit": {
+    "script": "codes/ecg-image-generator/gen_ecg_image_from_data.py",
+    "args": ["-r", "200", "--full_mode", "II", "--num_columns", "4"],
+    "rhythmStripCrop": [0.0, 0.72, 1.0, 0.98],
+    "traceStartS": 0.0,
+    "unverified": "The ECG-Image-Kit flags, the rhythm strip crop box and traceStartS were written from the README conventions and not run. Eyeball three images before trusting them."
+  }
+}

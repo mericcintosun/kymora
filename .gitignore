@@ -9,6 +9,15 @@ next-env.d.ts
 .farm-scaffold.json
 .farm-*
 
+# held-out set: rendered images and raw PTB-XL stay local; manifest, reference/ and
+# eval/ptbxl-results.json are committed
+data/ptbxl-fold10/images/
+ptb-xl*/
+*.dat
+*.hea
+__pycache__/
+eval/proof-synthetic.json
+
 # farm: sır dosyaları (otomatik eklendi)
 *.pem
 *.key

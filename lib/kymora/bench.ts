@@ -10,7 +10,7 @@
  *                     within +/- 60 ms (the PhysioNet Challenge 2024 digitization metric)
  *   Rejection rate    share of strips where the quality gate withheld a result
  */
-import { baselineDigitize, digitize, type BaselineMeasurement, type Measurement, type Signal } from "./pipeline";
+import { baselineDigitize, digitize, type BaselineMeasurement, type Measurement, type Raster, type Signal } from "./pipeline";
 import { mulberry32, referenceFor, renderStrip, type Reference, type StripParams } from "./synth";
 
 export const BENCH_DEFAULTS = { seed: 42, n: 40 } as const;
@@ -45,14 +45,18 @@ export interface MethodScore {
   snrDb: number | null;
 }
 
-export interface CaseResult {
-  params: StripParams;
+/** The scored part of one case. Synthetic cases add their StripParams; held-out images have none. */
+export interface ScoredCase {
   referenceHr: number;
   kymora: MethodScore;
   baseline: MethodScore;
 }
 
-function rrMae(rPeaksMs: number[], ref: Reference): number | null {
+export interface CaseResult extends ScoredCase {
+  params: StripParams;
+}
+
+export function rrMae(rPeaksMs: number[], ref: Reference): number | null {
   const errs: number[] = [];
   for (let i = 0; i + 1 < rPeaksMs.length; i++) {
     const e = rPeaksMs[i] / 1000;
@@ -132,6 +136,33 @@ export function evaluateCase(params: StripParams): CaseResult {
   };
 }
 
+/** Moves a measurement from image time into reference time (subtracts shiftS from every time stamp). */
+function toReferenceTime<M extends Measurement | BaselineMeasurement>(m: M, shiftS: number): M {
+  if (!shiftS) return m;
+  return {
+    ...m,
+    rPeaksMs: m.rPeaksMs.map((t) => t - shiftS * 1000),
+    signal: { ...m.signal, t0: m.signal.t0 - shiftS },
+  };
+}
+
+/**
+ * Scores one decoded image (a held-out PTB-XL strip) with the same score() the
+ * synthetic bench uses. traceStartS is where the reference's t = 0 sits on the image,
+ * in seconds from its left edge. Shifting the reference by +traceStartS onto image
+ * time is done as the equivalent shift of each estimate by -traceStartS, identically
+ * for Kymora and the baseline, because snrDb indexes the reference waveform by time.
+ */
+export function evaluateRaster(raster: Raster, reference: Reference, traceStartS = 0): ScoredCase {
+  const kymora = digitize(raster);
+  const baseline = baselineDigitize(raster);
+  return {
+    referenceHr: reference.heartRateBpm,
+    kymora: score(toReferenceTime(kymora, traceStartS), kymora.accepted, reference),
+    baseline: score(toReferenceTime(baseline, traceStartS), true, reference),
+  };
+}
+
 export interface Row {
   method: string;
   n: number;
@@ -141,13 +172,13 @@ export interface Row {
   rejectionRate: number;
 }
 
-export interface BenchSummary {
+export interface BenchSummary<C extends ScoredCase = CaseResult> {
   seed: number;
   n: number;
   rows: Row[];
   /** Signed HR error histograms, 2 bpm bins from -12 to +12 plus two overflow bins. */
   histogram: { edges: number[]; kymora: number[]; baseline: number[] };
-  cases: CaseResult[];
+  cases: C[];
 }
 
 const mean = (xs: Array<number | null>) => {
@@ -155,7 +186,7 @@ const mean = (xs: Array<number | null>) => {
   return v.length ? Math.round((v.reduce((a, b) => a + b, 0) / v.length) * 100) / 100 : null;
 };
 
-function row(method: string, cases: CaseResult[], pick: (c: CaseResult) => MethodScore): Row {
+function row(method: string, cases: ScoredCase[], pick: (c: ScoredCase) => MethodScore): Row {
   const reported = cases.filter((c) => pick(c).reported);
   return {
     method,
@@ -180,7 +211,7 @@ function histogram(errors: Array<number | null>): number[] {
   return bins;
 }
 
-export function summarize(seed: number, cases: CaseResult[]): BenchSummary {
+export function summarize<C extends ScoredCase = CaseResult>(seed: number, cases: C[]): BenchSummary<C> {
   const accepted = cases.filter((c) => c.kymora.reported);
   return {
     seed,
@@ -215,8 +246,8 @@ export async function runBench(opts: { seed?: number; n?: number; onProgress?: (
 
 const fmt = (v: number | null, d = 1) => (v === null ? "n/a" : v.toFixed(d));
 
-export function formatTable(s: BenchSummary): string {
-  const head = `Kymora synthetic bench: seed ${s.seed}, ${s.n} strips`;
+export function formatTable(s: BenchSummary<ScoredCase>, title?: string): string {
+  const head = title ?? `Kymora synthetic bench: seed ${s.seed}, ${s.n} strips`;
   const cols = ["method", "n", "HR MAE (bpm)", "RR MAE (ms)", "SNR (dB)", "rejected"];
   const lines = s.rows.map((r) => [r.method, String(r.n), fmt(r.hrMae, 2), fmt(r.rrMae, 1), fmt(r.snrDb, 2), `${(r.rejectionRate * 100).toFixed(1)}%`]);
   const widths = cols.map((c, i) => Math.max(c.length, ...lines.map((l) => l[i].length)));
