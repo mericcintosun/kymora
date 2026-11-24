@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "Kymora: paper ECG strips, measured in your browser";
+export const alt = "Kymora: paper ECG strips measured on-device";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -23,10 +23,10 @@ export default function OpengraphImage() {
             <div style={{ fontSize: 56, fontWeight: 700, color: C.ink, display: "flex" }}>Kymora</div>
           </div>
           <div style={{ marginTop: 48, fontSize: 84, lineHeight: 1, fontWeight: 700, color: C.ink, display: "flex", maxWidth: 950 }}>
-            Paper ECG, read to the millisecond.
+            Paper ECG strips, measured on-device.
           </div>
           <div style={{ marginTop: 28, fontSize: 30, color: C.ink, opacity: 0.75, display: "flex", maxWidth: 900 }}>
-            Phone photo of a lead II strip in, heart rate and RR intervals out. In the browser, with a quality gate.
+            Phone photo of a lead II strip in, heart rate and RR intervals out. No upload, and no number from a bad photo.
           </div>
         </div>
         <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, display: "flex", flexDirection: "column" }}>

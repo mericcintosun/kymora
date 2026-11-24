@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SceneSlot } from "@/components/scene-slot";
+import { LandingIntro } from "@/components/landing-intro";
 import { EmptyState } from "@/components/states";
 import { StripScene, type SceneData } from "@/components/strip-scene";
 import { Badge } from "@/components/ui/badge";
@@ -8,12 +9,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FEATURED_STRIP_ID, strips, type StripSeed } from "@/lib/data";
 import { runStrip, type StripRun } from "@/lib/kymora/bench";
+import { CONFIG } from "@/lib/kymora/pipeline";
 import { STRIP } from "@/lib/kymora/synth";
 
 // The landing page keeps the brand line as its full title instead of the "%s | Kymora" template.
 export const metadata: Metadata = {
-  title: { absolute: "Kymora: paper ECG strips, measured in your browser" },
+  title: { absolute: "Kymora: paper ECG strips measured on-device" },
 };
+
+const HEADLINE = "Paper ECG strips, measured in your browser.";
 
 function median(xs: number[]): number {
   const s = [...xs].sort((a, b) => a - b);
@@ -71,33 +75,36 @@ export default function Home() {
     <>
       {/* L1 poster: the headline owns the first viewport, no cards, no side column. */}
       <section className="relative overflow-hidden">
-        <div aria-hidden className="pointer-events-none absolute -right-24 top-10 size-[22rem] rounded-full bg-deep sm:size-[30rem]" />
-        <div className="relative mx-auto max-w-6xl px-5 pb-10 pt-14 sm:pt-20">
-          <h1 className="kymora-enter text-[clamp(3.5rem,9vw,8rem)] font-bold leading-[0.95] tracking-tight text-foreground">
-            Paper ECG, read to the millisecond.
-          </h1>
-          <p className="kymora-enter kymora-enter-2 mt-8 max-w-[62ch] text-lg leading-relaxed text-muted-foreground sm:text-xl">
-            Drop a phone photo of a printed lead II rhythm strip. Kymora calibrates on the paper&apos;s own millimetre grid,
-            turns the line into millivolts and milliseconds, and reports heart rate and RR intervals. When the photo
-            cannot support a number, it says so instead of guessing. Nothing leaves your browser.
-          </p>
-          <div className="kymora-enter kymora-enter-3 mt-9 flex flex-wrap items-center gap-x-6 gap-y-3">
-            <Button asChild size="lg">
-              <Link href={`/digitize?strip=${FEATURED_STRIP_ID}`}>Digitize an example strip</Link>
-            </Button>
-            <Link href="/how" className="text-base underline decoration-line decoration-2 underline-offset-4 hover:decoration-primary">
-              See how we test accuracy
-            </Link>
-          </div>
-        </div>
-        <div className="relative mx-auto max-w-6xl px-5">
-          <SceneSlot
-            n={1}
-            alt="A printed pink-grid ECG strip lying across a sand-coloured desk like a horizon, a phone hovering above it and a low sun disc behind"
-            width={1600}
-            height={280}
-            className="rounded-md"
-          />
+        <div aria-hidden className="pointer-events-none absolute -right-24 top-10 size-[22rem] max-w-full rounded-full bg-deep sm:size-[30rem]" />
+        <div className="relative mx-auto max-w-6xl px-5 pt-14 sm:pt-20">
+          <LandingIntro headline={HEADLINE}>
+            <p className="kymora-enter kymora-enter-2 mt-6 max-w-[62ch] text-lg leading-relaxed text-muted-foreground sm:mt-8 sm:text-xl">
+              For clinicians who get rhythm strips as phone photos, and researchers with paper archives. Kymora reads the
+              paper&apos;s 1 mm grid, fixes up to {CONFIG.maxSkewDeg}° of tilt and reports heart rate, RR intervals and a{" "}
+              {CONFIG.fs} Hz CSV. Below a quality score of {CONFIG.qualityThreshold.toFixed(2)} it shows no number. Nothing
+              is uploaded.
+            </p>
+            <div className="kymora-enter kymora-enter-3 mt-7 flex flex-wrap items-center gap-x-6 gap-y-3 sm:mt-9">
+              <Button asChild size="lg">
+                <Link href={`/digitize?strip=${FEATURED_STRIP_ID}`}>Digitize an example strip</Link>
+              </Button>
+              <Link
+                href="/how"
+                className="inline-flex min-h-11 items-center text-base underline decoration-line decoration-2 underline-offset-4 hover:decoration-primary"
+              >
+                See how we test accuracy
+              </Link>
+            </div>
+            <div data-intro-frame className="mt-10">
+              <SceneSlot
+                n={1}
+                alt="A printed pink-grid ECG strip lying across a sand-coloured desk like a horizon, a phone hovering above it and a low sun disc behind"
+                width={1600}
+                height={280}
+                className="rounded-md"
+              />
+            </div>
+          </LandingIntro>
         </div>
         <div aria-hidden className="mt-10">
           <div className="h-2 bg-deep" />
@@ -131,7 +138,7 @@ export default function Home() {
               with a ruler. A researcher with a cabinet of archived printouts cannot feed any of them to signal analysis.
             </p>
             <details className="group rounded-md border border-border bg-surface p-4 text-base">
-              <summary className="cursor-pointer font-medium">Why this is a real gap, in one line: the 2024 PhysioNet Challenge was about exactly this.</summary>
+              <summary className="cursor-pointer py-2.5 font-medium">Why this is a real gap, in one line: the 2024 PhysioNet Challenge was about exactly this.</summary>
               <div className="mt-3 max-w-[65ch] space-y-3 text-muted-foreground">
                 <p>
                   The George B. Moody PhysioNet Challenge 2024 asked teams to digitize ECG images, scoring them by
