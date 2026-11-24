@@ -293,9 +293,10 @@ function localPeaks(r: Float64Array, minLag: number): number[] {
  * peak is either the 1 mm line spacing or, when the faint 1 mm lines hide under
  * strong 5 mm lines, the 5 mm box spacing. A 5 mm repeat is recognised by its
  * structure rather than by height: the 1 mm lines leave a ladder of small peaks
- * at 1/5, 2/5, 3/5 and 4/5 of it. After a light blur those peaks sit near 0.08,
- * so an absolute height test misses them and the strip is read five times too
- * large (8 px/mm reported as 40). The 5 mm repeat, when visible, refines the
+ * at 1/5, 2/5, 3/5 and 4/5 of it. After a light blur those peaks rise only about
+ * 0.08 above a floor that the 5 mm pulses push below zero, so any absolute height
+ * or sign test misses them and the strip is read five times too large (8 px/mm
+ * reported as 40). The 5 mm repeat, when visible, refines the
  * estimate (five times the lag, five times the precision).
  *
  * strength is the height of the first clear peak, the grid's clearest repeat. It
@@ -314,8 +315,11 @@ export function gridPeriod(profile: Float64Array): { pxPerMm: number; strength: 
   if (fifth >= CONFIG.minPxPerMm) {
     const tol = Math.max(1, fifth * 0.1);
     // For k = 1..4, the prominent peak (localPeaks already requires a clear rise) nearest k/5 of `first`.
+    // No sign test: when strong 5 mm pulses dominate the mean-subtracted profile, every lag
+    // outside their overlap sits on a negative floor (about -d/(1-d) for duty cycle d), so the
+    // 1 mm rungs are clear local peaks that are still below zero.
     const ladder = [1, 2, 3, 4].map((k) => {
-      const near = peaks.filter((L) => L < first && Math.abs(L - k * fifth) <= tol && r[L] > 0);
+      const near = peaks.filter((L) => L < first && Math.abs(L - k * fifth) <= tol);
       return near.length ? near.reduce((a, b) => (Math.abs(b - k * fifth) < Math.abs(a - k * fifth) ? b : a)) : -1;
     });
     const rungs = ladder.filter((L) => L > 0).length;
