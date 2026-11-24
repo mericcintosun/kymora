@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { hasBrandFile } from "@/lib/brand-files";
 import { cn } from "@/lib/utils";
 
@@ -17,8 +18,16 @@ interface SceneSlotProps {
  */
 export function SceneSlot({ n, alt, width, height, className }: SceneSlotProps) {
   const src = hasBrandFile(`scene-${n}`) ? `/brand/scene-${n}.png` : `/illustrations/scene-${n}.svg`;
+  // next/image: the SVG fallback is served as is (the default loader skips SVG), an uploaded PNG is resized.
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={src} alt={alt} width={width} height={height} loading={n === 1 ? "eager" : "lazy"} className={cn("h-auto w-full max-w-full", className)} />
+    <Image
+      src={src}
+      alt={alt}
+      width={width}
+      height={height}
+      priority={n === 1}
+      sizes="(min-width: 72rem) 72rem, 100vw"
+      className={cn("h-auto w-full max-w-full", className)}
+    />
   );
 }
