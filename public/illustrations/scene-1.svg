@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 280" width="1600" height="280">
+  <rect width="1600" height="280" fill="#f4e9d8"/>
+  <circle cx="1240" cy="150" r="96" fill="#e2cfae"/>
+  <rect y="150" width="1600" height="130" fill="#ecdcc3"/>
+  <rect y="196" width="1600" height="22" fill="#e2cfae"/>
+  <rect y="240" width="1600" height="14" fill="#d2bd98"/>
+  <g transform="rotate(-2 800 150)">
+    <rect x="120" y="112" width="1360" height="76" rx="6" fill="#f4e9d8" stroke="#d2bd98" stroke-width="2"/>
+    <g stroke="#8c3041" stroke-opacity="0.25" stroke-width="1">
+      <path d="M160 112V188M200 112V188M240 112V188M280 112V188M320 112V188M360 112V188M400 112V188M440 112V188M480 112V188M520 112V188M560 112V188M600 112V188M640 112V188M680 112V188M720 112V188M760 112V188M800 112V188M840 112V188M880 112V188M920 112V188M960 112V188M1000 112V188M1040 112V188M1080 112V188M1120 112V188M1160 112V188M1200 112V188M1240 112V188M1280 112V188M1320 112V188M1360 112V188M1400 112V188M1440 112V188"/>
+      <path d="M120 131H1480M120 150H1480M120 169H1480"/>
+    </g>
+    <path d="M130 162H210L222 154L234 162H250L258 168L270 120L282 176L290 162H330Q346 146 362 162H470L482 154L494 162H510L518 168L530 120L542 176L550 162H590Q606 146 622 162H730L742 154L754 162H770L778 168L790 120L802 176L810 162H850Q866 146 882 162H990L1002 154L1014 162H1030L1038 168L1050 120L1062 176L1070 162H1110Q1126 146 1142 162H1250L1262 154L1274 162H1290L1298 168L1310 120L1322 176L1330 162H1370Q1386 146 1402 162H1470" fill="none" stroke="#3a2c1e" stroke-width="3" stroke-linejoin="round"/>
+  </g>
+  <g transform="translate(700 12)">
+    <rect width="120" height="84" rx="10" fill="#3a2c1e"/>
+    <rect x="8" y="8" width="104" height="68" rx="6" fill="#ecdcc3"/>
+    <path d="M14 50H40L46 44L52 50H58L62 20L68 60L72 50H106" fill="none" stroke="#2e7d4f" stroke-width="3" stroke-linejoin="round"/>
+    <circle cx="62" cy="20" r="4" fill="#8e2f2f"/>
+  </g>
+  <path d="M760 96V108" stroke="#8e2f2f" stroke-width="2" stroke-dasharray="3 4"/>
+</svg>
