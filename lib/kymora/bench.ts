@@ -1,5 +1,5 @@
 /**
- * Evaluation harness shared by the /how page (in the browser) and `npm run eval`
+ * Evaluation bench shared by the /how page (in the browser) and `npm run eval`
  * (in Node). Same strips, same seed, same code path, so the two print the same table.
  *
  * Metrics, all in clinical units:

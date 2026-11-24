@@ -73,7 +73,7 @@ Perspective correction from the four corners of the grid. A learned trace extrac
 
 ## Tech stack
 
-Next.js 15 (App Router), TypeScript (strict), Tailwind CSS v4, shadcn-style primitives, GSAP with ScrollTrigger (the pinned scene on the landing page), HTML canvas ImageData, tsx for `npm run eval`. Deployed as a Vercel site. The held-out set also needs Python with `wfdb` and ECG-Image-Kit, but the web app doesn't.
+Next.js 15 (App Router), React 19, TypeScript 5 (strict), Tailwind CSS 4, shadcn-style primitives, GSAP 3 with ScrollTrigger and `@gsap/react` (the pinned scene on the landing page), HTML canvas ImageData, tsx for `npm run eval` and `npm run seed`. Deployed as a Vercel site. The held-out set also needs Python with `wfdb` and ECG-Image-Kit, but the web app doesn't.
 
 There are no machine-learning models in the app. Everything is signal processing.
 
@@ -83,9 +83,10 @@ There are no machine-learning models in the app. Everything is signal processing
 npm install
 npm run dev        # http://localhost:3000
 npm run eval       # reproduce the evaluation table
+npm run seed       # list the 12 seeded strips and their reference heart rate
 ```
 
-No environment variables are needed (see `.env.example`).
+No secrets or API keys are needed. One optional variable, `ADAPTER_MODE` (default `fake`, the seeded synthetic strips), selects the data source behind `lib/adapter.ts`; see `.env.example`.
 
 Routes: `/` story, `/digitize` workspace, `/digitize/<strip-id>` shareable result, `/how` method and evaluation.
 

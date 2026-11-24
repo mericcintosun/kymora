@@ -1,6 +1,37 @@
 # HANDOFF: Kymora
 
-You are picking up a working Next.js 15 scaffold. Read this file, then `IDENTITY.md`, then `lib/kymora/pipeline.ts`. Start building right away; everything you need is here.
+You are picking up a working Next.js 15 scaffold. Read this file, then `IDENTITY.md`, then `CLAUDE.md` and `DEMO.md`, then `lib/kymora/pipeline.ts`. Start building right away; everything you need is here.
+
+## Phase 1: walking skeleton and seams (2026-11-24)
+
+**Goal.** Every step of the 90 s demo has a route, the demo path is clickable with seeded strips, and data flows through typed seams that Phase 2 can swap without touching pages.
+
+**Status.** All five slices written. Not built or run by the agent (it cannot run commands); the runner owns `npm install`, `npm run build`, `npm run seed` and the first deploy.
+
+**Decisions**
+- `lib/adapter.ts` exposes `listStrips`, `getStrip`, `getResult`, `getBench` as asked, plus `listSummaries` (API list without render params), `getRun` (the full `StripRun` the result page needs for the canvas and overlay) and `getBenchConfig` (seed and size for the `/how` panel). `featuredStripId` and `mode` are properties.
+- `ADAPTER_MODE=real` returns `fakeAdapter`, whose `mode` stays `"fake"`, so no API response claims real data before Phase 2.
+- `/how` renders no seeded strip, so its seam is `getBenchConfig()` passed into `BenchPanel` as `seed` and `n` props, with the same values as `BENCH_DEFAULTS` (rendered output unchanged).
+- `/api/strips` and `/api/bench` are `force-static` (computed at build; the bench adds about 40 strip runs to the build). `/api/strips/[id]` keeps the default dynamic behavior so unknown ids return a 404 JSON.
+- `app/page.tsx` and `components/site-header.tsx` still import `@/lib/data` (only `FEATURED_STRIP_ID` and the strip list). They were out of this phase's scope; move them behind the adapter when Phase 2 changes the source.
+- The landing page got `title: { absolute: ... }` so it keeps the brand line instead of the `%s | Kymora` template.
+- Global `:focus-visible` outline sits in `@layer base` so the existing ring utilities on buttons and inputs still win.
+- `components/result-view.tsx` canvas and SVG overlay scale with `w-full h-auto` inside an `overflow-hidden` figure, and the histogram SVG is `w-full`, so neither needed an `overflow-x-auto` wrapper. The bench table already had one.
+- `app/icon.svg` holds raw hexes (all equal to IDENTITY values). It is on the never-edit list, so it stays as is, documented as an exception next to `app/opengraph-image.tsx`.
+- One comment word in `lib/kymora/bench.ts` ("harness") was changed to "bench" for the banned-word list. No logic changed.
+
+**Failed attempts.** None.
+
+**Files changed**
+- New: `DEMO.md`, `CLAUDE.md`, `lib/types.ts`, `lib/adapter.ts`, `lib/data/seed.ts`, `scripts/seed.ts`, `app/api/strips/route.ts`, `app/api/strips/[id]/route.ts`, `app/api/bench/route.ts`, `app/digitize/loading.tsx`, `app/digitize/[id]/loading.tsx`, `app/how/loading.tsx`, `components/page-skeleton.tsx`, `components/nav-links.tsx`, `.farm-commits.json`.
+- Edited: `package.json` (seed script), `.env.example`, `app/digitize/page.tsx`, `app/digitize/[id]/page.tsx`, `app/how/page.tsx`, `components/bench-panel.tsx`, `components/workspace.tsx` (empty state, decode error copy, file input label, focus ring on the drop zone), `components/site-header.tsx`, `app/error.tsx`, `app/not-found.tsx`, `app/page.tsx` (metadata only), `app/globals.css` (focus-visible), `app/opengraph-image.tsx` (comment), `lib/kymora/bench.ts` (comment), `README.md`, `HANDOFF.md`.
+
+**Commands run.** None, agent cannot run commands.
+
+**Open questions**
+- None needed a new dependency, route or env variable beyond `ADAPTER_MODE`, which the phase spec asked for.
+
+**Next best step.** Phase 2: build the held-out PTB-XL fold 10 set, implement `loadPtbxlFold10()` in `scripts/eval.ts`, then add a real adapter in `lib/adapter.ts` behind `ADAPTER_MODE=real` that serves those results (and set its `mode` to `"real"`).
 
 ## 1. Context
 
@@ -33,7 +64,7 @@ Identity: see IDENTITY.md (direction D9, structure S2, archetype L1, kit K2)
 - `/digitize/[id]` -> `app/digitize/[id]/page.tsx`: a shareable result. Seeded ids are computed on the server with the same pipeline and statically generated. `local-*` ids render `components/local-result.tsx` from sessionStorage, because uploads never leave the device.
 - `/how` -> `app/how/page.tsx` + `components/bench-panel.tsx`: method, live synthetic bench, who benefits and who is harmed, limits, credits.
 
-**Navigation:** the header (`components/site-header.tsx`) has two links ("Example result", "Method & evaluation") plus the CTA "Digitize a strip". The footer links to Workspace and Method.
+**Navigation:** the header (`components/site-header.tsx`) has two links ("Example result", "Method & evaluation") plus the CTA "Digitize a strip". The links live in `components/nav-links.tsx` (client), which marks the current route with `aria-current="page"` and an oxblood underline. The footer links to Workspace and Method.
 
 **One-mark proof:** the header home link, quoted from `components/site-header.tsx`:
 ```tsx
@@ -48,11 +79,14 @@ Identity: see IDENTITY.md (direction D9, structure S2, archetype L1, kit K2)
 - `lib/kymora/synth.ts`: seeded strip renderer (beat model, grid, ink, blur, tilt, shadow, noise) plus exact ground truth (`referenceFor`).
 - `lib/kymora/bench.ts`: bench strips, metrics (HR MAE, RR MAE, SNR, rejection rate), summary, histogram, `formatTable`.
 - `scripts/eval.ts`: `npm run eval`, deterministic with `--seed`/`--n`, writes `eval/results.json`.
+- `scripts/seed.ts`: `npm run seed`, prints the 12 strip ids and reference bpm, writes nothing.
+- `lib/adapter.ts` + `lib/types.ts`: the data seam. `/digitize`, `/digitize/[id]` and `/how` read through `getAdapter()`. API stubs `/api/strips`, `/api/strips/[id]`, `/api/bench` return `ApiResponse<T>`.
 - Workspace: run any of the 12 seeded strips (`lib/data.ts`) or drop your own photo, see the overlay, download CSV, copy the result link.
 
 **What is mocked or stubbed**
 - `loadPtbxlFold10()` in `scripts/eval.ts` throws with instructions. This is the held-out PTB-XL fold 10 / ECG-Image-Kit loader and the most important missing piece.
 - The demo strips are synthetic (Gaussian beat model), not PTB-XL waveforms. The UI says so.
+- `ADAPTER_MODE=real` still returns the fake adapter (synthetic strips).
 - The README results table is a placeholder until you run `npm run eval`.
 
 **Interaction kit K2 (gsap)**

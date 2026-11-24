@@ -5,6 +5,8 @@ export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 // ImageResponse cannot read CSS variables, so the IDENTITY.md key block is repeated here.
+// These six values mirror IDENTITY.md exactly (GROUND, SURFACE, DEEP, LINE, INK, ACCENT) and
+// app/globals.css. This is the only file in app/ and components/ allowed to hold hex literals.
 const C = { ground: "#f4e9d8", surface: "#ecdcc3", deep: "#e2cfae", line: "#d2bd98", ink: "#3a2c1e", accent: "#8e2f2f" };
 
 export default function OpengraphImage() {
