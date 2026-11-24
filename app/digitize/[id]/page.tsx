@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { LocalResult } from "@/components/local-result";
 import { ResultView } from "@/components/result-view";
+import { SourceNote } from "@/components/source-note";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getAdapter } from "@/lib/adapter";
@@ -57,6 +58,9 @@ export default async function ResultPage({ params }: { params: Promise<{ id: str
         <Badge variant="secondary">{strip.stress}</Badge>
         <span className="text-muted-foreground">{strip.capture}</span>
       </p>
+      <div className="mt-5 max-w-[68ch]">
+        <SourceNote mode={adapter.mode} heldOut={adapter.getHeldOut()} />
+      </div>
 
       <div className="mt-10">
         <ResultView

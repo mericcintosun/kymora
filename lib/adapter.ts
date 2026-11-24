@@ -1,97 +1,43 @@
 /**
- * The data seam. Pages and API routes ask the adapter for strips, results and
- * bench numbers, so Phase 2 can swap the source (PTB-XL fold 10 results) without
- * touching a page. Server side only: it reads process.env.ADAPTER_MODE.
+ * The data seam and the adapter selector. Pages and API routes call getAdapter(); this
+ * is the only file that branches on ADAPTER_MODE. Server side only.
+ *
+ *   ADAPTER_MODE=real and eval/ptbxl-results.json valid  -> real adapter (held-out results)
+ *   anything else                                         -> fake adapter (seeded synthetic strips)
  *
  * Imports are relative so `tsx scripts/seed.ts` resolves them without path aliases.
  */
-import { FEATURED_STRIP_ID, seedStrips, stripById, type StripSeed } from "./data/seed";
-import { BENCH_DEFAULTS, benchStrips, evaluateCase, runStrip, summarize, type BenchSummary, type StripRun } from "./kymora/bench";
-import { referenceFor } from "./kymora/synth";
-import type { AdapterMode, BenchConfig, DigitizeResult, StripSummary } from "./types";
+import { fakeAdapter, type KymoraAdapter } from "./adapter-fake";
+import { makeRealAdapter } from "./adapter-real";
+import { LOG_PREFIX, readAdapterMode, type AdapterModeSetting } from "./config";
+import type { ErrorCode } from "./errors";
+import { loadHeldOutResults } from "./held-out";
+import type { HeldOutResults } from "./schemas";
+import type { AdapterMode } from "./types";
 
-export interface KymoraAdapter {
-  /** Which data source actually answers. Reported in every ApiResponse. */
-  mode: AdapterMode;
-  featuredStripId: string;
-  /** Full seeds, including render parameters, for the workspace. */
-  listStrips(): StripSeed[];
-  /** Seeds without render parameters, with the true reference rate. */
-  listSummaries(): StripSummary[];
-  getStrip(id: string): StripSeed | undefined;
-  /** Full pipeline run (measurement, baseline, ground truth) for a result page. Null for an unknown id. */
-  getRun(id: string): StripRun | null;
-  /** Flat numbers of one result. Null for an unknown id. */
-  getResult(id: string): DigitizeResult | null;
-  /** Seed and size of the bench the /how page runs in the browser. */
-  getBenchConfig(): BenchConfig;
-  /** The same bench, computed on the server. */
-  getBench(): BenchSummary;
-}
+export { fakeAdapter };
+export type { KymoraAdapter };
 
-function summaryOf(strip: StripSeed): StripSummary {
-  return {
-    id: strip.id,
-    title: strip.title,
-    scenario: strip.scenario,
-    capture: strip.capture,
-    stress: strip.stress,
-    referenceBpm: Math.round(referenceFor(strip.params).heartRateBpm * 10) / 10,
-    synthetic: true,
-  };
-}
+let loggedFallback = false;
 
-function resultOf(strip: StripSeed, run: StripRun): DigitizeResult {
-  const k = run.kymora;
-  return {
-    id: strip.id,
-    title: strip.title,
-    synthetic: true,
-    accepted: k.accepted,
-    quality: k.quality,
-    reasons: k.reasons,
-    bpm: k.accepted ? k.heartRateBpm : null,
-    meanRrMs: k.accepted ? k.meanRrMs : null,
-    rrMs: k.accepted ? k.rrMs : [],
-    pxPerMm: k.pxPerMmX,
-    skewDeg: k.skewDeg,
-    reference: { heartRateBpm: run.reference.heartRateBpm, meanRrMs: run.reference.meanRrMs },
-    baselineBpm: run.baseline.heartRateBpm,
-  };
-}
-
-/** Synthetic strips from lib/data.ts, measured by the real pipeline. Labelled synthetic everywhere. */
-export const fakeAdapter: KymoraAdapter = {
-  mode: "fake",
-  featuredStripId: FEATURED_STRIP_ID,
-  listStrips: () => seedStrips,
-  listSummaries: () => seedStrips.map(summaryOf),
-  getStrip: (id) => stripById(id),
-  getRun(id) {
-    const strip = stripById(id);
-    return strip ? runStrip(strip.params) : null;
-  },
-  getResult(id) {
-    const strip = stripById(id);
-    return strip ? resultOf(strip, runStrip(strip.params)) : null;
-  },
-  getBenchConfig: () => ({ seed: BENCH_DEFAULTS.seed, n: BENCH_DEFAULTS.n }),
-  getBench() {
-    const { seed, n } = BENCH_DEFAULTS;
-    return summarize(seed, benchStrips(seed, n).map(evaluateCase));
-  },
-};
-
-export function adapterMode(): AdapterMode {
-  return process.env.ADAPTER_MODE === "real" ? "real" : "fake";
+/** Pure selection rule, exported for the tests. Reason is set when the result is the fake adapter. */
+export function selectAdapter(mode: AdapterModeSetting, heldOut: HeldOutResults | null): { adapter: KymoraAdapter; reason: ErrorCode | null } {
+  if (mode !== "real") return { adapter: fakeAdapter, reason: "not_configured" };
+  if (!heldOut) return { adapter: fakeAdapter, reason: "not_configured" };
+  return { adapter: makeRealAdapter(heldOut), reason: null };
 }
 
 export function getAdapter(): KymoraAdapter {
-  if (adapterMode() === "real") {
-    // Phase 2 swaps in the held-out PTB-XL fold 10 results here (loadPtbxlFold10()).
-    // Until then "real" falls back to the fake adapter, whose mode stays "fake" so no
-    // response claims real data it does not have.
-    return fakeAdapter;
+  const mode = readAdapterMode();
+  const { adapter, reason } = selectAdapter(mode, mode === "real" ? loadHeldOutResults() : null);
+  if (reason && !loggedFallback) {
+    loggedFallback = true;
+    console.log(`${LOG_PREFIX} adapter fake reason=${reason}`);
   }
-  return fakeAdapter;
+  return adapter;
+}
+
+/** The mode that actually answers (after the fallback), not the requested one. */
+export function adapterMode(): AdapterMode {
+  return getAdapter().mode;
 }

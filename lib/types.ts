@@ -8,6 +8,8 @@ export type { StressTest, StripSeed } from "./data";
 export type { BenchSummary, CaseResult, MethodScore, Row as BenchRow } from "./kymora/bench";
 export type { Measurement } from "./kymora/pipeline";
 export type { StripParams } from "./kymora/synth";
+export type { HeldOutResults } from "./schemas";
+export type { ApiError, ErrorCode } from "./errors";
 
 export type AdapterMode = "fake" | "real";
 
@@ -52,4 +54,5 @@ export interface BenchConfig {
   n: number;
 }
 
-export type ApiResponse<T> = { ok: true; data: T; mode: AdapterMode } | { ok: false; error: string };
+/** Failures carry a fixed code from lib/errors.ts plus a hint; older 404/500 bodies send a plain sentence. */
+export type ApiResponse<T> = { ok: true; data: T; mode: AdapterMode } | { ok: false; error: string; hint?: string };

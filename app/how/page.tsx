@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BenchPanel } from "@/components/bench-panel";
+import { HeldOutPanel } from "@/components/held-out-panel";
 import { SceneSlot } from "@/components/scene-slot";
+import { SourceNote } from "@/components/source-note";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getAdapter } from "@/lib/adapter";
@@ -46,7 +48,9 @@ const steps = [
 ];
 
 export default function HowPage() {
-  const bench = getAdapter().getBenchConfig();
+  const adapter = getAdapter();
+  const bench = adapter.getBenchConfig();
+  const heldOut = adapter.getHeldOut();
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-12">
@@ -85,12 +89,23 @@ export default function HowPage() {
       <section className="mt-16 space-y-6">
         <h2 className="text-4xl font-semibold">Evaluation</h2>
         <p className="max-w-[68ch] leading-relaxed">
-          Two layers. The synthetic bench below runs in your tab and in <code>npm run eval</code> with the same seed, so a
-          stranger gets the same table. The held-out clinical set is PTB-XL fold 10 (the test fold its authors
-          recommend), with lead II rhythm strips rendered as paper images by ECG-Image-Kit from a fixed seed and
-          configuration; its loader is wired in <code>scripts/eval.ts</code> and its numbers are added to the README once
-          that set is generated.
+          Two layers. The held-out clinical set is PTB-XL fold 10 (the test fold its authors recommend): lead II from the
+          first 300 fold 10 records, rendered as paper strip images from a fixed seed and a committed configuration, then
+          scored by <code>npm run eval -- --set ptbxl</code> with the same scoring code as the bench below. Its table is
+          read from the committed <code>eval/ptbxl-results.json</code> and is never used for tuning. The synthetic bench
+          runs in your tab and in <code>npm run eval</code> with the same seed, so a stranger gets the same table.
         </p>
+        <SourceNote mode={adapter.mode} heldOut={heldOut} />
+        {heldOut ? (
+          <HeldOutPanel results={heldOut} />
+        ) : (
+          <p className="max-w-[68ch] rounded-md border border-border bg-deep/50 px-4 py-3 text-sm leading-relaxed">
+            The held-out PTB-XL table is not shown in this build: the set has not been generated here, or this deployment
+            runs with <code>ADAPTER_MODE=fake</code>. To produce it, follow the README section &ldquo;Held-out set&rdquo;, run{" "}
+            <code>npm run eval -- --set ptbxl</code>, commit <code>eval/ptbxl-results.json</code> and set{" "}
+            <code>ADAPTER_MODE=real</code>.
+          </p>
+        )}
         <BenchPanel seed={bench.seed} n={bench.n} />
         <Card>
           <CardHeader>
@@ -100,6 +115,11 @@ export default function HowPage() {
             <p>
               <code>npm install</code> then <code>npm run eval</code> (seed 42, 200 strips, writes{" "}
               <code>eval/results.json</code>). Change the seed or size with <code>npm run eval -- --seed 7 --n 500</code>.
+            </p>
+            <p>
+              Held-out set: <code>pip install -r scripts/ptbxl/requirements.txt</code>, then{" "}
+              <code>python scripts/ptbxl/make_set.py --ptbxl-root &lt;path&gt;</code> with a local PTB-XL copy, then{" "}
+              <code>npm run eval -- --set ptbxl</code>.
             </p>
             <p className="text-muted-foreground">
               Every threshold the pipeline uses lives in the exported <code>CONFIG</code> object and is printed with the
