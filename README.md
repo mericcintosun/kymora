@@ -97,9 +97,22 @@ Perspective correction from the four corners of the grid. A learned trace extrac
 
 ## Tech stack
 
-Next.js 15 (App Router), React 19, TypeScript 5 (strict), Tailwind CSS 4, shadcn-style primitives, GSAP 3 with ScrollTrigger and `@gsap/react` (the pinned scene on the landing page), zod 3 (validation at every data edge), pngjs 7 (eval only, decodes the held-out images), HTML canvas ImageData, tsx for `npm run eval`, `npm run seed` and `npm test`. Deployed as a Vercel site. The held-out set builder needs Python with `wfdb`, numpy, matplotlib and Pillow (`scripts/ptbxl/requirements.txt`), plus ECG-Image-Kit for the default renderer, but the web app doesn't.
+Next.js 15 (App Router), React 19, TypeScript 5 (strict), Tailwind CSS 4, shadcn-style primitives, GSAP 3 with ScrollTrigger and `@gsap/react` (the pinned scene and the headline intro on the landing page, and the Kymora against baseline figure tween on `/how`; all three are skipped under reduced motion), hand-drawn SVG charts (no chart library), zod 3 (validation at every data edge), pngjs 7 (eval only, decodes the held-out images), HTML canvas ImageData, tsx for `npm run eval`, `npm run seed` and `npm test`. Deployed as a Vercel site. The held-out set builder needs Python with `wfdb`, numpy, matplotlib and Pillow (`scripts/ptbxl/requirements.txt`), plus ECG-Image-Kit for the default renderer, but the web app doesn't.
 
 There are no machine-learning models in the app. Everything is signal processing.
+
+## Prize categories
+
+All four categories are judged automatically from the same submission. Step numbers refer to `DEMO.md`.
+
+| Bounty | Prize | Slots | Required tech | Code file | DEMO step |
+|---|---|---|---|---|---|
+| Grand Prize | A signed PDF certificate of achievement for the highest combined score across the four published judging criteria. No cash value. | 1 | none | `lib/kymora/pipeline.ts`, `scripts/eval.ts` | 2 to 6 |
+| Excellence in Research & Reproducibility | A signed PDF certificate of achievement for strong evaluation, appropriate comparisons, transparent limitations, and reproducible results. No cash value. | not stated | none | `scripts/eval.ts`, `scripts/ptbxl/make_set.py`, `components/held-out-panel.tsx` | 5 and 6 |
+| Best Presentation | A signed PDF certificate of achievement for the clearest explanation of the project, its working features, and its results. No cash value. | not stated | none | `components/result-view.tsx`, `app/digitize/[id]/page.tsx` | 2 to 7 |
+| Best Logo | A signed PDF certificate of achievement for the strongest project logo, judged on originality, clarity, and relevance to the project. No cash value. | not stated | none | `public/logo.svg`, `components/brand-mark.tsx` | 1 and 7 |
+
+Delivery notes per category are in `DELIVERY.md`. Data handling and the (empty) wallet and contract surface are in `SECURITY.md`.
 
 ## Quickstart
 
