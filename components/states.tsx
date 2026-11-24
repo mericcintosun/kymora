@@ -31,7 +31,7 @@ export function ErrorState({
     <Card role="alert" className={cn("kymora-enter border-bad", className)}>
       <CardContent className="space-y-3">
         <h2 className="font-display text-2xl font-semibold">{title}</h2>
-        <div className="max-w-[65ch] text-sm leading-relaxed text-muted-foreground">{message}</div>
+        <div className="max-w-[65ch] break-words text-sm leading-relaxed text-muted-foreground">{message}</div>
         <div className="flex flex-wrap gap-3 pt-1">
           <Button onClick={onRetry}>{retryLabel}</Button>
           {homeHref && (
@@ -50,7 +50,7 @@ export function EmptyState({ title, message, cta, className }: { title: string; 
     <Card aria-live="polite" className={cn("kymora-enter", className)}>
       <CardContent className="space-y-3">
         <p className="font-medium">{title}</p>
-        <div className="max-w-[68ch] text-sm leading-relaxed text-muted-foreground">{message}</div>
+        <div className="max-w-[68ch] break-words text-sm leading-relaxed text-muted-foreground">{message}</div>
         <div className="pt-1">{cta}</div>
       </CardContent>
     </Card>

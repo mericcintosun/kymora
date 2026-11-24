@@ -119,7 +119,9 @@ export function LocalResult({ id }: { id: string }) {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-3xl font-semibold">{state.stored.label}</h2>
+      <h2 className="break-all text-3xl font-semibold" title={state.stored.label}>
+        {state.stored.label}
+      </h2>
       <ResultView label={state.stored.label} measurement={state.stored.measurement} raster={state.raster} resultPath={`/digitize/${id}`} onResultPage />
     </div>
   );

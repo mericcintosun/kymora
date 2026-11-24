@@ -45,7 +45,7 @@ export default async function ResultPage({ params }: { params: Promise<{ id: str
   try {
     run = adapter.getRun(strip.id);
   } catch (e) {
-    console.log(`${LOG_PREFIX} run failed id=${strip.id}`);
+    console.error(`${LOG_PREFIX} run failed id=${strip.id}`);
     throw e;
   }
   if (!run) notFound();
@@ -55,12 +55,12 @@ export default async function ResultPage({ params }: { params: Promise<{ id: str
   return (
     <div className="mx-auto max-w-6xl px-5 py-12">
       <p className="text-sm text-muted-foreground">
-        <Link href="/digitize" className="underline decoration-line underline-offset-4 hover:decoration-primary">
+        <Link href="/digitize" className="inline-block py-3 underline decoration-line underline-offset-4 hover:decoration-primary">
           Workspace
         </Link>{" "}
         / result
       </p>
-      <h1 className="mt-3 text-5xl font-bold sm:text-6xl">{strip.title}</h1>
+      <h1 className="mt-1 break-words text-5xl font-bold sm:text-6xl">{strip.title}</h1>
       <p className="mt-4 max-w-[68ch] text-lg text-muted-foreground">{strip.scenario}</p>
       <p className="mt-3 flex flex-wrap items-center gap-2 text-sm">
         <Badge variant="secondary">{strip.stress}</Badge>

@@ -22,7 +22,7 @@ export function NavLinks({ links }: { links: NavLink[] }) {
             href={l.href}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "hidden rounded-md px-2 py-1.5 text-sm underline-offset-[6px] hover:bg-surface hover:text-foreground sm:inline-block",
+              "hidden min-h-11 items-center rounded-md px-2 text-sm underline-offset-[6px] hover:bg-surface hover:text-foreground md:inline-flex",
               active ? "text-foreground underline decoration-primary decoration-2" : "text-muted-foreground"
             )}
           >

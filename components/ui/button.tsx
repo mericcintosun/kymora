@@ -17,11 +17,12 @@ const buttonVariants = cva(
         destructive: "bg-destructive text-destructive-foreground hover:bg-second",
         link: "text-primary underline decoration-line decoration-2 underline-offset-4 hover:decoration-primary",
       },
+      // Every size yields at least 44px (min-h-11) so each control is a full touch target.
       size: {
-        default: "h-9 px-4 py-2",
-        sm: "h-8 px-3 text-xs",
-        lg: "h-12 px-7 text-base",
-        icon: "h-9 w-9",
+        default: "min-h-11 px-4 py-2",
+        sm: "min-h-11 px-3 py-1.5 text-sm",
+        lg: "min-h-12 px-7 py-2 text-base",
+        icon: "size-11",
       },
     },
     defaultVariants: { variant: "default", size: "default" },

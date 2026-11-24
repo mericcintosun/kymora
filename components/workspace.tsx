@@ -307,7 +307,9 @@ export function Workspace({
 
       {state.kind === "done" && (
         <div className="kymora-enter" key={state.runId}>
-          <h2 className="mb-4 text-3xl font-semibold">{state.label}</h2>
+          <h2 className="mb-4 break-all text-3xl font-semibold" title={state.label}>
+            {state.label}
+          </h2>
           {!state.resultPath && (
             <p className="mb-4 text-sm text-muted-foreground">
               Result link unavailable: this tab&apos;s storage is full or blocked, so this result has no page of its own. The
