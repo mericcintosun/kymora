@@ -6,12 +6,15 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "seed": "node -e \"console.log('seed: nothing to do yet')\""
+    "eval": "tsx scripts/eval.ts",
+    "seed": "node -e \"console.log('seed: nothing to do yet, demo strips are generated from lib/data.ts at runtime')\""
   },
   "dependencies": {
+    "@gsap/react": "^2.1.2",
     "@radix-ui/react-slot": "^1.1.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "gsap": "^3.15.1",
     "lucide-react": "^0.474.0",
     "next": "^15.4.5",
     "react": "^19.1.0",
@@ -24,6 +27,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "tailwindcss": "^4.1.11",
+    "tsx": "^4.20.3",
     "typescript": "^5"
   }
 }
