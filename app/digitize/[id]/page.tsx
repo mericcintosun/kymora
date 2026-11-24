@@ -7,6 +7,7 @@ import { SourceNote } from "@/components/source-note";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getAdapter } from "@/lib/adapter";
+import { LOG_PREFIX } from "@/lib/config";
 
 export function generateStaticParams() {
   return getAdapter()
@@ -38,8 +39,15 @@ export default async function ResultPage({ params }: { params: Promise<{ id: str
   const strip = adapter.getStrip(id);
   if (!strip) notFound();
 
-  // Computed on the server with the same pipeline the browser runs.
-  const run = adapter.getRun(strip.id);
+  // Computed on the server with the same pipeline the browser runs. A throw is logged
+  // and rethrown so app/digitize/[id]/error.tsx renders; it is never swallowed.
+  let run: ReturnType<typeof adapter.getRun>;
+  try {
+    run = adapter.getRun(strip.id);
+  } catch (e) {
+    console.log(`${LOG_PREFIX} run failed id=${strip.id}`);
+    throw e;
+  }
   if (!run) notFound();
   const k = run.kymora;
   const b = run.baseline;

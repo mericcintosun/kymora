@@ -4,6 +4,7 @@ import { BenchPanel } from "@/components/bench-panel";
 import { HeldOutPanel } from "@/components/held-out-panel";
 import { SceneSlot } from "@/components/scene-slot";
 import { SourceNote } from "@/components/source-note";
+import { EmptyState } from "@/components/states";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getAdapter } from "@/lib/adapter";
@@ -99,12 +100,22 @@ export default function HowPage() {
         {heldOut ? (
           <HeldOutPanel results={heldOut} />
         ) : (
-          <p className="max-w-[68ch] rounded-md border border-border bg-deep/50 px-4 py-3 text-sm leading-relaxed">
-            The held-out PTB-XL table is not shown in this build: the set has not been generated here, or this deployment
-            runs with <code>ADAPTER_MODE=fake</code>. To produce it, follow the README section &ldquo;Held-out set&rdquo;, run{" "}
-            <code>npm run eval -- --set ptbxl</code>, commit <code>eval/ptbxl-results.json</code> and set{" "}
-            <code>ADAPTER_MODE=real</code>.
-          </p>
+          <EmptyState
+            title="The held-out PTB-XL table is not shown in this build"
+            message={
+              <p>
+                Either the set has not been generated here, or this deployment runs with <code>ADAPTER_MODE=fake</code>. To
+                produce it, follow the README section &ldquo;Held-out set&rdquo;, run <code>npm run eval -- --set ptbxl</code>,
+                commit <code>eval/ptbxl-results.json</code> and set <code>ADAPTER_MODE=real</code>. The synthetic bench below
+                runs either way.
+              </p>
+            }
+            cta={
+              <Button asChild variant="outline">
+                <Link href="/digitize">Try it on a strip</Link>
+              </Button>
+            }
+          />
         )}
         <BenchPanel seed={bench.seed} n={bench.n} />
         <Card>

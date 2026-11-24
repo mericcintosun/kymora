@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SceneSlot } from "@/components/scene-slot";
+import { EmptyState } from "@/components/states";
 import { StripScene, type SceneData } from "@/components/strip-scene";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -109,9 +110,15 @@ export default function Home() {
         <StripScene data={scene} />
       ) : (
         <section className="mx-auto max-w-6xl px-5 py-16">
-          <Card>
-            <CardContent>No seeded strip passed the quality gate in this build. Open the workspace to inspect why.</CardContent>
-          </Card>
+          <EmptyState
+            title="No seeded strip passed the quality gate in this build"
+            message="The live frame needs one accepted strip. Open the workspace to see the quality score and the reasons for each strip."
+            cta={
+              <Button asChild>
+                <Link href={`/digitize?strip=${FEATURED_STRIP_ID}`}>Open the workspace</Link>
+              </Button>
+            }
+          />
         </section>
       )}
 

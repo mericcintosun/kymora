@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { EmptyState, ErrorState, Skeleton } from "@/components/states";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BENCH_DEFAULTS, HIST_EDGES, runBench, type BenchSummary } from "@/lib/kymora/bench";
@@ -59,14 +60,21 @@ function ErrorHistogram({ title, bins, barClass }: { title: string; bins: number
  */
 export function BenchPanel({ seed = BENCH_DEFAULTS.seed, n = BENCH_DEFAULTS.n }: { seed?: number; n?: number } = {}) {
   const [state, setState] = useState<State>({ kind: "idle" });
+  // One bench at a time, even if a second click lands before the button re-renders disabled.
+  const busyRef = useRef(false);
+  const running = state.kind === "running";
 
   async function run() {
+    if (busyRef.current) return;
+    busyRef.current = true;
     setState({ kind: "running", done: 0, total: n });
     try {
       const summary = await runBench({ seed, n, onProgress: (done, total) => setState({ kind: "running", done, total }) });
       setState({ kind: "done", summary });
     } catch (e) {
       setState({ kind: "error", message: e instanceof Error ? e.message : "The bench failed." });
+    } finally {
+      busyRef.current = false;
     }
   }
 
@@ -80,27 +88,34 @@ export function BenchPanel({ seed = BENCH_DEFAULTS.seed, n = BENCH_DEFAULTS.n }:
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
-        {state.kind !== "running" && (
-          <Button onClick={run} variant={state.kind === "done" ? "outline" : "default"}>
-            {state.kind === "done" ? "Run again (same seed, same numbers)" : "Run the bench"}
+        {state.kind === "idle" && (
+          <EmptyState
+            title="No bench results yet"
+            message={`Nothing is precomputed here. The table and the two error histograms appear after the ${n} strips run in this tab.`}
+            cta={<Button onClick={run}>Run the bench</Button>}
+          />
+        )}
+
+        {(state.kind === "running" || state.kind === "done") && (
+          <Button onClick={run} disabled={running} aria-disabled={running} variant={state.kind === "done" ? "outline" : "default"}>
+            {state.kind === "done" ? "Run again (same seed, same numbers)" : "Running the bench"}
           </Button>
         )}
 
         {state.kind === "running" && (
-          <div aria-live="polite" className="space-y-2">
+          <div role="status" aria-live="polite" aria-busy="true" className="space-y-2">
             <p className="text-sm">
               Strip {state.done} of {state.total}
             </p>
             <div className="h-3 overflow-hidden rounded-md bg-deep">
               <div className="h-full bg-primary transition-[width]" style={{ width: `${(state.done / state.total) * 100}%` }} />
             </div>
+            <Skeleton className="h-32" />
           </div>
         )}
 
         {state.kind === "error" && (
-          <p role="alert" className="text-sm text-bad">
-            {state.message}
-          </p>
+          <ErrorState title="The bench stopped" message={state.message} onRetry={run} retryLabel="Run the bench again" />
         )}
 
         {state.kind === "done" && (
