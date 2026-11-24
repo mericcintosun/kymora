@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { FigureTween } from "@/components/held-out-panel";
 import { EmptyState, ErrorState, Skeleton } from "@/components/states";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,7 +26,7 @@ function ErrorHistogram({ title, bins, barClass }: { title: string; bins: number
   return (
     <figure>
       <figcaption className="mb-2 text-sm font-medium">{title}</figcaption>
-      <svg viewBox={`0 0 ${W} ${H + 28}`} className="h-auto w-full" role="img" aria-label={`${title}: ${bins.map((b, i) => `${binLabel(i)} bpm: ${b}`).join(", ")}`}>
+      <svg viewBox={`0 0 ${W} ${H + 28}`} className="h-auto w-full max-w-full" role="img" aria-label={`${title}: ${bins.map((b, i) => `${binLabel(i)} bpm: ${b}`).join(", ")}`}>
         <line x1="0" x2={W} y1={H} y2={H} className="stroke-line" strokeWidth="1" />
         {bins.map((b, i) => {
           const h = (b / max) * (H - 12);
@@ -91,13 +92,19 @@ export function BenchPanel({ seed = BENCH_DEFAULTS.seed, n = BENCH_DEFAULTS.n }:
         {state.kind === "idle" && (
           <EmptyState
             title="No bench results yet"
-            message={`Nothing is precomputed here. The table and the two error histograms appear after the ${n} strips run in this tab.`}
+            message={`Nothing is precomputed here. Press Run the bench: after the ${n} strips run in this tab, the Kymora against baseline figures, the table and the two error histograms appear.`}
             cta={<Button onClick={run}>Run the bench</Button>}
           />
         )}
 
         {(state.kind === "running" || state.kind === "done") && (
-          <Button onClick={run} disabled={running} aria-disabled={running} variant={state.kind === "done" ? "outline" : "default"}>
+          <Button
+            onClick={run}
+            disabled={running}
+            aria-disabled={running}
+            variant={state.kind === "done" ? "outline" : "default"}
+            className="whitespace-normal text-left"
+          >
             {state.kind === "done" ? "Run again (same seed, same numbers)" : "Running the bench"}
           </Button>
         )}
@@ -120,6 +127,25 @@ export function BenchPanel({ seed = BENCH_DEFAULTS.seed, n = BENCH_DEFAULTS.n }:
 
         {state.kind === "done" && (
           <>
+            {/* Fallback home of signature 3 when the held-out file is absent: the same tween, fed by the bench that just ran. */}
+            <FigureTween
+              kymora={{
+                name: "Kymora",
+                hrMae: state.summary.rows[0].hrMae,
+                rrMae: state.summary.rows[0].rrMae,
+                rejectionRate: state.summary.rows[0].rejectionRate,
+                bins: state.summary.histogram.kymora,
+              }}
+              baseline={{
+                name: "baseline",
+                hrMae: state.summary.rows[1].hrMae,
+                rrMae: state.summary.rows[1].rrMae,
+                rejectionRate: state.summary.rows[1].rejectionRate,
+                bins: state.summary.histogram.baseline,
+              }}
+              edges={state.summary.histogram.edges}
+              unitNoun="strip"
+            />
             <div className="overflow-x-auto">
               <table className="w-full min-w-[36rem] text-left text-sm">
                 <caption className="sr-only">Bench results by method</caption>

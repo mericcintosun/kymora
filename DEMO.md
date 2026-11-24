@@ -14,8 +14,9 @@
 2. **0:10 to 0:25, trace and scale.** `/digitize` (`app/digitize/page.tsx`, `components/workspace.tsx`). The seeded tilted strip loads (or drop a photo on the drop zone). The green trace sits on the ink, and the calibration card shows px/mm and the tilt in degrees.
 3. **0:25 to 0:40, beats and export.** `/digitize` (`app/digitize/page.tsx`). R peaks are marked, heart rate and mean RR appear with the reference value and the signed error beside them. Click "Download CSV (mV, 250 Hz)".
 4. **0:40 to 0:45, refusal.** `/digitize?strip=blurred-75-motion` (`app/digitize/page.tsx`). The motion-blurred strip gets "No reliable measurement", the quality score against the 0.60 gate, and the reasons. No number is shown.
-5. **0:45 to 1:15, evaluation and limits.** `/how` (`app/how/page.tsx`). In a terminal, `npm run eval` (seed 42) prints the bench table. On the page, run the same bench in the browser, then scroll to the "Who benefits" and "Who could be harmed" cards and the limits list.
-6. **1:15 to 1:30, shareable result and close.** `/digitize/sinus-72-tilted` (`app/digitize/[id]/page.tsx`). The same result as its own URL with "Copy result link", plus the baseline comparison. Close on the Kymora logo.
+5. **0:45 to 1:05, evaluation and limits.** `/how` (`app/how/page.tsx`). In a terminal, `npm run eval` (seed 42) prints the bench table. On the page, run the same bench in the browser, then scroll to the "Who benefits" and "Who could be harmed" cards and the limits list.
+6. **1:05 to 1:15, figure tween on `/how`.** `/how` (`components/held-out-panel.tsx`, fallback `components/bench-panel.tsx`). In the "Kymora against the baseline" block, click "Show baseline", then "Show Kymora". The HR MAE, RR MAE and rejection-rate figures and the histogram bars animate together between the two methods. With the held-out file committed the block sits in the PTB-XL card; without it, it appears in the synthetic bench card after "Run the bench".
+7. **1:15 to 1:30, shareable result and close.** `/digitize/sinus-72-tilted` (`app/digitize/[id]/page.tsx`). The same result as its own URL with "Copy result link", plus the baseline comparison. Close on the Kymora logo.
 
 ## Notes for the recording
 
