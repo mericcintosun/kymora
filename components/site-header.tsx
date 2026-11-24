@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { BrandMark } from "@/components/brand-mark";
+import { NavLinks, type NavLink } from "@/components/nav-links";
 import { Button } from "@/components/ui/button";
 import { FEATURED_STRIP_ID } from "@/lib/data";
 
-const links = [
+const links: NavLink[] = [
   { href: `/digitize/${FEATURED_STRIP_ID}`, label: "Example result" },
   { href: "/how", label: "Method & evaluation" },
 ];
@@ -18,15 +19,7 @@ export function SiteHeader() {
           Kymora
         </Link>
         <nav aria-label="Main" className="flex items-center gap-1 sm:gap-3">
-          {links.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className="hidden rounded-md px-2 py-1.5 text-sm text-muted-foreground underline-offset-4 hover:bg-surface hover:text-foreground sm:inline-block"
-            >
-              {l.label}
-            </Link>
-          ))}
+          <NavLinks links={links} />
           <Button asChild size="sm">
             <Link href={`/digitize?strip=${FEATURED_STRIP_ID}`}>Digitize a strip</Link>
           </Button>

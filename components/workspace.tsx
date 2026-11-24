@@ -13,6 +13,7 @@ import { referenceFor, renderStrip } from "@/lib/kymora/synth";
 const MAX_SIDE = 2400;
 
 type State =
+  | { kind: "empty" }
   | { kind: "working"; label: string }
   | { kind: "done"; label: string; measurement: Measurement; raster: Raster; reference?: ResultReference; resultPath: string }
   | { kind: "error"; message: string };
@@ -37,13 +38,18 @@ async function rasterFromFile(file: File): Promise<{ raster: Raster; dataUrl: st
 
 export function Workspace({ strips, initialId }: { strips: StripSeed[]; initialId: string }) {
   const [activeId, setActiveId] = useState(initialId);
-  const [state, setState] = useState<State>({ kind: "working", label: "Loading example" });
+  const [state, setState] = useState<State>(
+    strips.some((s) => s.id === initialId) ? { kind: "working", label: "Loading example" } : { kind: "empty" }
+  );
   const [dragging, setDragging] = useState(false);
 
   const runSeed = useCallback(
     async (id: string) => {
       const strip = strips.find((s) => s.id === id);
-      if (!strip) return;
+      if (!strip) {
+        setState({ kind: "empty" });
+        return;
+      }
       setActiveId(id);
       setState({ kind: "working", label: strip.title });
       await nextFrame();
@@ -75,8 +81,18 @@ export function Workspace({ strips, initialId }: { strips: StripSeed[]; initialI
     setActiveId("upload");
     setState({ kind: "working", label: file.name });
     await nextFrame();
+    let decoded: { raster: Raster; dataUrl: string };
     try {
-      const { raster, dataUrl } = await rasterFromFile(file);
+      decoded = await rasterFromFile(file);
+    } catch {
+      setState({
+        kind: "error",
+        message: `${file.name} could not be decoded as an image. Try a JPEG or PNG photo of one lead II strip. Nothing was uploaded.`,
+      });
+      return;
+    }
+    try {
+      const { raster, dataUrl } = decoded;
       const measurement = digitize(raster);
       const id = `local-${Date.now().toString(36)}`;
       try {
@@ -127,7 +143,7 @@ export function Workspace({ strips, initialId }: { strips: StripSeed[]; initialI
             if (f) void runFile(f);
           }}
           className={cn(
-            "flex cursor-pointer flex-col justify-center gap-1 rounded-md border-2 border-dashed border-line bg-surface p-5 text-sm transition-colors hover:border-primary",
+            "flex cursor-pointer flex-col justify-center gap-1 rounded-md border-2 border-dashed border-line bg-surface p-5 text-sm transition-colors hover:border-primary focus-within:border-primary focus-within:ring-2 focus-within:ring-ring",
             dragging && "border-primary bg-deep",
             activeId === "upload" && "border-primary"
           )}
@@ -137,6 +153,7 @@ export function Workspace({ strips, initialId }: { strips: StripSeed[]; initialI
           <Input
             type="file"
             accept="image/*"
+            aria-label="Choose a photo of an ECG rhythm strip"
             className="sr-only"
             onChange={(e) => {
               const f = e.target.files?.[0];
@@ -146,6 +163,18 @@ export function Workspace({ strips, initialId }: { strips: StripSeed[]; initialI
           />
         </label>
       </div>
+
+      {state.kind === "empty" && (
+        <Card aria-live="polite">
+          <CardContent className="space-y-2">
+            <p className="font-medium">No strip selected yet</p>
+            <p className="text-sm text-muted-foreground">
+              Pick one of the seeded strips above, or drop a photo of your own strip on the sand panel. The trace, heart
+              rate and RR intervals will appear here.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {state.kind === "working" && (
         <Card aria-live="polite" className="kymora-enter">

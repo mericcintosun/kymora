@@ -93,6 +93,16 @@ h2 {
   letter-spacing: -0.01em;
 }
 
+/* Keyboard focus for every element without its own ring utility (links, summary).
+   In the base layer so the ring utilities on buttons and inputs still win. */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: var(--radius);
+  }
+}
+
 ::selection {
   background: var(--deep);
   color: var(--ink);

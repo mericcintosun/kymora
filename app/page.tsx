@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { SceneSlot } from "@/components/scene-slot";
 import { StripScene, type SceneData } from "@/components/strip-scene";
@@ -7,6 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FEATURED_STRIP_ID, strips, type StripSeed } from "@/lib/data";
 import { runStrip, type StripRun } from "@/lib/kymora/bench";
 import { STRIP } from "@/lib/kymora/synth";
+
+// The landing page keeps the brand line as its full title instead of the "%s | Kymora" template.
+export const metadata: Metadata = {
+  title: { absolute: "Kymora: paper ECG strips, measured in your browser" },
+};
 
 function median(xs: number[]): number {
   const s = [...xs].sort((a, b) => a - b);
