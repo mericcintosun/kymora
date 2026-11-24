@@ -47,11 +47,11 @@ Kymora synthetic bench: seed 42, 60 strips
 
 method                                     n   HR MAE (bpm)  RR MAE (ms)  SNR (dB)  rejected
 -----------------------------------------  --  ------------  -----------  --------  --------
-Kymora (grid calibration + quality gate)   3   0.13          1.2          13.67     95.0%   
+Kymora (grid calibration + quality gate)   5   0.14          1.2          12.88     91.7%   
 Baseline (300 DPI assumed, darkest pixel)  59  39.44         277.5        -3.20     1.7%    
-Baseline on the strips Kymora accepted     3   23.67         130.9        -4.30     0.0%    
+Baseline on the strips Kymora accepted     5   33.44         153.3        -4.42     0.0%    
 
-config: {"maxSkewDeg":8,"skewStepDeg":0.25,"minPxPerMm":3,"maxPxPerMm":40,"gridRedMargin":6,"inkLumRatio":0.6,"inkRedMargin":25,"minColumnMass":15,"fs":250,"qualityThreshold":0.6,"minDurationS":4,"minHeartRate":25,"maxHeartRate":220}
+config: {"maxSkewDeg":8,"skewStepDeg":0.25,"skewFineStepDeg":0.02,"minPxPerMm":3,"maxPxPerMm":40,"gridRedMargin":6,"inkLumRatio":0.6,"inkRedMargin":25,"minColumnMass":15,"fs":250,"qualityThreshold":0.6,"minDurationS":4,"minHeartRate":25,"maxHeartRate":220}
 ```
 <!-- PROOF:END eval-synthetic -->
 
