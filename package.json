@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "eval": "tsx scripts/eval.ts",
-    "seed": "node -e \"console.log('seed: nothing to do yet, demo strips are generated from lib/data.ts at runtime')\""
+    "seed": "tsx scripts/seed.ts"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
