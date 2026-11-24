@@ -24,7 +24,7 @@ const steps = [
   {
     name: "Tilt",
     fn: "estimateSkew",
-    body: `The grid mask is projected onto rows at every angle from -${CONFIG.maxSkewDeg}° to +${CONFIG.maxSkewDeg}° in ${CONFIG.skewStepDeg}° steps. Horizontal grid lines collapse into sharp peaks only at the true tilt; a parabola through the best three angles refines it.`,
+    body: `The grid mask is projected onto rows at every angle from -${CONFIG.maxSkewDeg}° to +${CONFIG.maxSkewDeg}° in ${CONFIG.skewStepDeg}° steps. Horizontal grid lines collapse into sharp peaks only at the true tilt. A second pass in ${CONFIG.skewFineStepDeg}° steps around the best angle, plus a parabola through its neighbours, refines it.`,
   },
   {
     name: "Scale from the paper itself",
@@ -95,18 +95,17 @@ export default function HowPage() {
           read from the committed <code>eval/ptbxl-results.json</code> and is never used for tuning. The synthetic bench
           runs in your tab and in <code>npm run eval</code> with the same seed, so a stranger gets the same table.
         </p>
-        <SourceNote mode={adapter.mode} heldOut={heldOut} />
+        <SourceNote mode={adapter.mode} heldOut={heldOut} scope="evaluation" />
         {heldOut ? (
           <HeldOutPanel results={heldOut} />
         ) : (
           <EmptyState
-            title="The held-out PTB-XL table is not shown in this build"
+            title="Reproduce the held-out table"
             message={
               <p>
-                Either the set has not been generated here, or this deployment runs with <code>ADAPTER_MODE=fake</code>. To
-                produce it, follow the README section &ldquo;Held-out set&rdquo;, run <code>npm run eval -- --set ptbxl</code>,
-                commit <code>eval/ptbxl-results.json</code> and set <code>ADAPTER_MODE=real</code>. The synthetic bench below
-                runs either way.
+                Follow the README section &ldquo;Held-out set&rdquo;: generate the fold 10 images from a local PTB-XL copy, run{" "}
+                <code>npm run eval -- --set ptbxl</code>, commit <code>eval/ptbxl-results.json</code> and set{" "}
+                <code>ADAPTER_MODE=real</code>. The synthetic bench below runs either way.
               </p>
             }
             cta={

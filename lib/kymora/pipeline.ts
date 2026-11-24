@@ -31,6 +31,7 @@ export const GAIN_MM_PER_MV = 10;
 export const CONFIG = {
   maxSkewDeg: 8,
   skewStepDeg: 0.25,
+  skewFineStepDeg: 0.02,
   minPxPerMm: 3,
   maxPxPerMm: 40,
   gridRedMargin: 6,
@@ -159,33 +160,44 @@ export function estimateSkew(grid: Float32Array, w: number, h: number): number {
     }
   }
   if (xs.length < 50) return 0;
-  const maxTan = Math.tan((CONFIG.maxSkewDeg * Math.PI) / 180);
+  // One degree of headroom: the fine pass may look slightly past the coarse range.
+  const maxTan = Math.tan(((CONFIG.maxSkewDeg + 1) * Math.PI) / 180);
   const offset = Math.ceil(w * maxTan) + 1;
   const bins = new Float64Array(h + 2 * offset + 2);
-  const angles: number[] = [];
-  const energy: number[] = [];
-  for (let deg = -CONFIG.maxSkewDeg; deg <= CONFIG.maxSkewDeg + 1e-9; deg += CONFIG.skewStepDeg) {
+  const energyAt = (deg: number) => {
     const t = Math.tan((deg * Math.PI) / 180);
     bins.fill(0);
-    for (let k = 0; k < xs.length; k++) {
-      bins[Math.round(ys[k] - xs[k] * t) + offset] += vs[k];
-    }
+    for (let k = 0; k < xs.length; k++) bins[Math.round(ys[k] - xs[k] * t) + offset] += vs[k];
     let e = 0;
     for (let i = 0; i < bins.length; i++) e += bins[i] * bins[i];
-    angles.push(deg);
-    energy.push(e);
-  }
-  let best = 0;
-  for (let i = 1; i < energy.length; i++) if (energy[i] > energy[best]) best = i;
-  let deg = angles[best];
-  if (best > 0 && best < energy.length - 1) {
-    const a = energy[best - 1];
-    const b = energy[best];
-    const c = energy[best + 1];
-    const den = a - 2 * b + c;
-    if (den !== 0) deg += 0.5 * ((a - c) / den) * CONFIG.skewStepDeg;
-  }
-  return deg;
+    return e;
+  };
+  /** Best angle of a scan, refined by a parabola through it and its two neighbours. */
+  const scan = (from: number, to: number, step: number) => {
+    const angles: number[] = [];
+    const energy: number[] = [];
+    for (let deg = from; deg <= to + 1e-9; deg += step) {
+      angles.push(deg);
+      energy.push(energyAt(deg));
+    }
+    let best = 0;
+    for (let i = 1; i < energy.length; i++) if (energy[i] > energy[best]) best = i;
+    let deg = angles[best];
+    if (best > 0 && best < energy.length - 1) {
+      const a = energy[best - 1];
+      const b = energy[best];
+      const c = energy[best + 1];
+      const den = a - 2 * b + c;
+      if (den !== 0) deg += clamp(0.5 * ((a - c) / den), -0.5, 0.5) * step;
+    }
+    return deg;
+  };
+  // Coarse pass over the whole range. The energy peak is a cusp, not a parabola, so the
+  // coarse refinement can miss by about 0.1°, which across a 2000 px strip smears the
+  // 1 mm horizontal lines by several pixels. A fine pass around the coarse best fixes that.
+  const coarse = scan(-CONFIG.maxSkewDeg, CONFIG.maxSkewDeg, CONFIG.skewStepDeg);
+  const span = CONFIG.skewStepDeg + CONFIG.skewFineStepDeg;
+  return scan(coarse - span, coarse + span, CONFIG.skewFineStepDeg);
 }
 
 /* 4. Rotation --------------------------------------------------------------- */
