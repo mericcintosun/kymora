@@ -2,6 +2,71 @@
 
 You are picking up a working Next.js 15 scaffold. Read this file, then `IDENTITY.md`, then `CLAUDE.md` and `DEMO.md`, then `lib/kymora/pipeline.ts`. Start building right away; everything you need is here.
 
+## Phase 3: demo path states, guards and reset (2026-11-24)
+
+**Goal.** Make the whole DEMO.md path safe around the Phase 2 held-out mechanism: a PTB-XL reference for dropped photos named after their ecg_id, loading, error-with-retry and empty states on every demo route, guards against double drops, and a `demo:reset` determinism check.
+
+**Status.** All six slices are written. Nothing was built, run or tested by the agent, which cannot run commands. Until the human completes the Phase 2 checklist plus `npm run lookup`, `/digitize` shows no PTB-XL reference for dropped photos. That is the intended fallback, not a bug.
+
+**Step to file map (each with its fallback in the same file)**
+- Step 1: `app/page.tsx`. Fallback: `EmptyState` with "Open the workspace" when no seeded strip passes the gate (`app/page.tsx:113`).
+- Steps 2 and 3: `components/workspace.tsx`. Lookup fallback: `getReferenceLookup()` returns null in `lib/adapter-fake.ts` and when the file is missing in `lib/adapter-real.ts` (via `lib/ptbxl-lookup.ts`); the selector in `lib/adapter.ts` falls back to fake. No match means no reference and no invented number.
+- Step 4: `components/workspace.tsx` (refusal renders through `ResultView`; pipeline throw goes to `ErrorState` with retry).
+- Step 5: `app/how/page.tsx`, with the held-out `EmptyState` ("Try it on a strip") and `components/bench-panel.tsx` (idle `EmptyState` "Run the bench", running skeleton with a disabled button, `ErrorState` with retry).
+- Step 6: `app/digitize/[id]/page.tsx` (getRun throw logged as `[core] run failed id=<id>` and rethrown to `app/digitize/[id]/error.tsx`), with `components/local-result.tsx` for `local-` ids.
+
+**Route to state file map**
+| Route | Loading (Skeleton) | Error (ErrorState with retry) | Empty (EmptyState with CTA) |
+| --- | --- | --- | --- |
+| `/` | none (static, prerendered; no `app/loading.tsx` added, see Decisions) | `app/error.tsx` | `app/page.tsx` scene fallback |
+| `/digitize` | `app/digitize/loading.tsx` (PageSkeleton), `WorkspaceSkeleton` in `components/workspace.tsx` | `app/digitize/error.tsx`, `ErrorState` in `components/workspace.tsx` | `EmptyState` in `components/workspace.tsx` ("Run the example strip") |
+| `/digitize/[id]` | `app/digitize/[id]/loading.tsx`, `WorkspaceSkeleton` in `components/local-result.tsx` | `app/digitize/[id]/error.tsx`, `ErrorState` in `components/local-result.tsx` | `EmptyState` in `components/local-result.tsx` ("Open the workspace"); unknown seeded ids keep `notFound()` |
+| `/how` | `app/how/loading.tsx`, `Skeleton` in `components/bench-panel.tsx` | `app/how/error.tsx`, `ErrorState` in `components/bench-panel.tsx` | `EmptyState` in `app/how/page.tsx` and `components/bench-panel.tsx` |
+
+**Decisions**
+- Persistence, chosen row: "Steps only read seeded or computed data: none, seed constants and in-memory per request". Rejected: KV, because no mutable shared state exists and photos never leave the device. Postgres, because there are no relational reads. On-chain, because there is no chain. The only per-visitor state is the `sessionStorage` keys `kymora:<id>` written in `components/workspace.tsx` and read in `components/local-result.tsx`. This is the deliberate "no server persistence" design. `lib/store.ts` was not created and no store driver is imported anywhere.
+- Idempotency: client side only. `busyRef` in `components/workspace.tsx` makes `runSeed` and `runFile` return early during a run and is cleared in `finally`. The strip buttons, the file input and the drop label are bound to `state.kind === "working"` (`disabled`, `aria-disabled`, `pointer-events-none`). `fileKey(file)` (name, size, lastModified, in `lib/file-key.ts`, re-exported from the workspace) maps to the `local-` id already created, so a re-drop reuses the id and writes no second entry. Server side idempotency is not applicable: there are no server writes.
+- Drag handlers moved from the label to a wrapper `div`, so a drop during a run (label has `pointer-events-none`) is still caught and ignored instead of the browser opening the file.
+- Storage quota: `storeLocal` tries with the photo, then without it, then gives up. On a full storage the result still reaches `done`, without `resultPath` (ResultView hides the copy and open links when it is absent) and with a "Result link unavailable" line.
+- `ecgIdFromFilename` lives in `lib/ecg-id.ts` (no `node:` imports) so the client workspace can import it; `lib/ptbxl-lookup.ts` re-exports it next to `loadPtbxlLookup`. Same for `fileKey` in `lib/file-key.ts`, so the test imports it without a DOM.
+- `loadPtbxlLookup` returns `{ lookup, reason }`. `lib/held-out.ts` gained `loadHeldOutStatus()` with the same shape so `demo:reset` can print the reason code; `loadHeldOutResults()` is unchanged for its callers.
+- `ResultView` had no slot for the reference source, so it gained an optional `referenceLabel` prop shown under the reference ("PTB-XL fold 10 reference, ecg_id N"). Seeded strips do not pass it.
+- `LocalResult` validates the stored entry with `storedLocalResultSchema` (zod, `lib/schemas.ts`). Errors carry an `ErrorCode`: blocked storage `not_configured`, bad JSON `parse_failure`, wrong shape `invalid_input`.
+- Tracing include: `outputFileTracingIncludes` is a top-level `NextConfig` key in the installed Next 15.5.29 (`node_modules/next/dist/server/config-shared.d.ts:1125`). Added for `/digitize` with both `./eval/ptbxl-lookup.json` and `./eval/ptbxl-results.json`, because the real adapter is only selected when the results file is also readable at request time.
+- `SceneSlot` and `BrandMark` used raw `<img>`, not `next/image` as the spec assumed. Both now use `next/image`. SVG sources are served unoptimized by the default loader; an uploaded PNG is resized.
+- No `app/loading.tsx` for `/`: the page runs the pipeline only at build time (static prerender), so a loading boundary would never show.
+- `demo:reset` compares measurement JSON without `runtimeMs`, the one clock dependent field.
+- `proof.mjs` extended cleanly: new `demo-reset` README block with the check lines.
+- Web3 wallet state machine: not applicable. The repo has no wallet, no `contracts/` directory and no chain dependency.
+
+**Failed attempts.** None.
+
+**Files changed**
+- New: `lib/ptbxl-lookup.ts`, `lib/ecg-id.ts`, `lib/file-key.ts`, `scripts/ptbxl-lookup.ts`, `scripts/reset.ts`, `components/states.tsx`, `app/digitize/error.tsx`, `app/digitize/[id]/error.tsx`, `app/how/error.tsx`, `tests/ptbxl-lookup.test.ts`.
+- Edited: `lib/schemas.ts`, `lib/config.ts`, `lib/types.ts`, `lib/adapter-fake.ts`, `lib/adapter-real.ts`, `lib/held-out.ts`, `components/workspace.tsx`, `components/result-view.tsx`, `components/local-result.tsx`, `components/bench-panel.tsx`, `components/scene-slot.tsx`, `components/brand-mark.tsx`, `app/error.tsx`, `app/page.tsx`, `app/digitize/page.tsx`, `app/digitize/[id]/page.tsx`, `app/how/page.tsx`, `next.config.ts`, `package.json`, `scripts/proof.mjs`, `README.md`, `CLAUDE.md`, `HANDOFF.md`.
+- Not created: `eval/ptbxl-lookup.json` (needs the manifest; no invented values), `lib/store.ts`.
+- Unchanged: `.env.example`, `.farm-live.json`, `app/icon.svg`, `public/logo.svg`, `components/ui/*`, `lib/kymora/*`.
+
+**Commands run.** None, the agent cannot run commands.
+
+**Acceptance gate, checked by reading files**
+- `getReferenceLookup` is on the interface (`lib/adapter-fake.ts`), in `fakeAdapter` and in `makeRealAdapter`. `app/digitize/page.tsx` passes `lookup`; `components/workspace.tsx` calls `ecgIdFromFilename`.
+- Grep for `writeFile|appendFile|mkdirSync|createWriteStream` over `app/`, `components/`, `lib/`: 0 hits. Writes exist only in `scripts/ptbxl-lookup.ts`, `scripts/eval.ts` and `scripts/proof.mjs`.
+- No new env variable and no `NEXT_PUBLIC_` key.
+- Sameness greps over `app/`, `components/`, `lib/`: dead hexes, banned keyframes, `--delay`, `--d:`, `backdrop-blur`: 0 hits. Raw hex: only the documented `app/opengraph-image.tsx:10`. Em and en dashes and banned words: 0 hits (also over `scripts/`, `tests/`, README). Double hyphen: only the CLI separator in code (`npm run eval -- --set ptbxl`) and the README table rule. No new keyframe; `components/states.tsx` uses `kymora-enter` only. Header untouched, one brand mark.
+- Stack claims: no new library; `next/image` ships with `next`.
+
+**Unmet or unverified items**
+- `npm run build`, `npm test`, `npm run demo:reset` (three identical runs), `npm run lookup` and `npm run proof` are unverified until the runner runs them.
+- `demo:reset` asserts that `blurred-75-motion` is refused with quality under `CONFIG.qualityThreshold`. DEMO step 4 implies this, but if that strip is refused for another reason (for example too few beats) while its quality is above 0.60, the check fails and exits 1. Then the fix is to the check's wording, never to `CONFIG`.
+- The PTB-XL reference only shows in real mode, which itself needs a valid `eval/ptbxl-results.json`. A lookup committed without the results file stays invisible.
+- `next/image` for an SVG source relies on the default loader skipping SVG optimization; check the landing and `/how` illustrations after the build.
+
+**Open questions**
+- Should fake mode also serve the lookup when the file exists? The spec says no (fake returns null), so a PTB-XL photo shows its reference only with `ADAPTER_MODE=real`.
+
+**Next best step (Phase 4).** Landing polish and GSAP signatures 2 (intro timeline on the hand-split headline) and 3 (figure tween bound to a control on `/how`). Before that, the human runs the Phase 2 checklist, then `npm run lookup`, commits `eval/ptbxl-lookup.json`, and checks a `<ecg_id>.png` drop on the live URL.
+
 ## Phase 2: held-out PTB-XL evaluation goes real (2026-11-24)
 
 **Goal.** DEMO step 5 (`/how`) shows the held-out table (Kymora, baseline, baseline on accepted) for PTB-XL fold 10 images, seed 42, read through zod from a committed `eval/ptbxl-results.json`, next to the live synthetic bench, which stays.
