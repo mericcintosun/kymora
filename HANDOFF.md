@@ -2,6 +2,78 @@
 
 You are picking up a working Next.js 15 scaffold. Read this file, then `IDENTITY.md`, then `CLAUDE.md` and `DEMO.md`, then `lib/kymora/pipeline.ts`. Start building right away; everything you need is here.
 
+## Phase 2: held-out PTB-XL evaluation goes real (2026-11-24)
+
+**Goal.** DEMO step 5 (`/how`) shows the held-out table (Kymora, baseline, baseline on accepted) for PTB-XL fold 10 images, seed 42, read through zod from a committed `eval/ptbxl-results.json`, next to the live synthetic bench, which stays.
+
+**Status.** All five slices are written. Nothing was built, run or tested by the agent, which cannot run commands. The runner owns `npm install`, `npm run build`, `npm test` and `npm run proof`. The held-out set itself does not exist yet: it needs the human run below. Until then `/how` shows the honest "not shown in this build" sentence, and `eval-ptbxl` in the README reads "Not run in this build".
+
+**Mechanism that went real.** The held-out PTB-XL results: `scripts/ptbxl/make_set.py` builds the set, `npm run eval -- --set ptbxl` scores it with the in-repo pipeline and writes `eval/ptbxl-results.json`, `lib/held-out.ts` validates it, and `lib/adapter-real.ts` serves it through `getHeldOut()`.
+**Still on fixtures (synthetic, in both modes):** `listStrips`, `listSummaries`, `getStrip`, `getRun`, `getResult`, `getBench`, `getBenchConfig`. The real adapter delegates them to the fake implementations, and every strip item keeps `synthetic: true`.
+**Env list:** `.farm-live.json` has `requiredEnv: []` and `optionalEnv: []`. The real path is in-browser signal processing over committed result files and needs no secret. `ADAPTER_MODE` is a plain non-secret switch that is already documented in `.env.example`.
+
+### Manual checklist for the human (in order)
+
+1. Download PTB-XL from PhysioNet (about 2 GB of disk; Python 3 needed; no account funds or testnet involved). If you want the default renderer, also clone ECG-Image-Kit and install its own requirements.
+2. Run `pip install -r scripts/ptbxl/requirements.txt`, then `python scripts/ptbxl/make_set.py --ptbxl-root <path> --renderer ecgkit --ecgkit-dir <clone>`. If ECG-Image-Kit fails, use `--renderer matplotlib`. Open three images in `data/ptbxl-fold10/images/` and check that `traceStartS` in `manifest.json` matches where the trace starts at the image's left edge. For ECG-Image-Kit, also check the rhythm strip crop (`ecgkit.rhythmStripCrop`, `ecgkit.traceStartS` in `scripts/ptbxl/render-config.json`).
+3. Run `npm run eval -- --set ptbxl`. It prints the table, `CONFIG`, renderer, seed and n, and writes `eval/ptbxl-results.json`.
+4. Commit `data/ptbxl-fold10/manifest.json`, `data/ptbxl-fold10/reference/` and `eval/ptbxl-results.json`. The images stay gitignored. Set `ADAPTER_MODE=real` on Vercel, redeploy, open `/how`, then run `npm run proof` so the README shows the committed rows.
+5. Check the PTB-XL and ECG-Image-Kit licenses on their pages before publishing derived images or reference waveforms.
+
+**Decisions**
+- `lib/config.ts` has no timeout or retry constants because Kymora makes no outbound calls.
+- `readAdapterMode()` reads `process.env` at call time; `ADAPTER_MODE` is also exported as the value at module load. The selector uses the function so tests can change the env in one process.
+- `lib/adapter.ts` exports a pure `selectAdapter(mode, heldOut)` for tests, plus `getAdapter`, `adapterMode`, `KymoraAdapter` and `fakeAdapter` as before. `adapterMode()` now returns the mode that actually answers after the fallback. The fallback is logged once per process: `[core] adapter fake reason=not_configured`.
+- `loadHeldOutResults(path?)` caches per path, and the reason codes are `not_configured` (missing file), `parse_failure` (bad JSON) and `invalid_input` (schema mismatch). Tests pass a path that does not exist, so they keep passing after the human commits the real file.
+- Time alignment: the spec asked to shift the reference by `traceStartS`. `snrDb` indexes the reference waveform by time and must not change, so `evaluateRaster` applies the equivalent shift to each estimate (`rPeaksMs` and `signal.t0` minus `traceStartS`), identically for Kymora and the baseline (`lib/kymora/bench.ts:139-164`).
+- `bench.ts` is not strictly additive. `rrMae`, `ScoredCase` and `evaluateRaster` are additions. To let `summarize` take held-out cases that have no `StripParams`, `CaseResult` now extends `ScoredCase` (same shape), and `summarize`, `row` and `BenchSummary` became generic over `ScoredCase` with `CaseResult` as the default. `formatTable` gained an optional title so the PTB-XL table is not headed "synthetic bench". These are type-level changes only: every synthetic call site and every runtime result is unchanged.
+- `SourceNote` takes `mode` and `heldOut` (its `n`, `renderer` and `seed`) rather than a bare boolean, because the live sentence names N and the renderer.
+- The `/digitize` note was cut. That page is dynamic (it reads `searchParams`), so on Vercel it resolves the adapter at request time, and the serverless bundle may not include `eval/ptbxl-results.json`. The note could then say "sample data" while `/how` says "live source". `/how` and `/digitize/[id]` are prerendered at build time, where the file is present.
+- `/api/strips/[id]` returns `{ ok: false, error: "invalid_input", hint }` with status 400 for a bad id. `ApiResponse` gained an optional `hint`. The 404 and 500 bodies are unchanged.
+- `scripts/eval.ts` now exits 1 on an unknown `--set` value instead of silently running the synthetic bench. `--set synthetic` and the default behave exactly as before.
+- Both renderers get the same seeded degradations (tilt, blur, shadow, JPEG) from `render-config.json` after rendering. The per-record RNG is seeded with `[seed, ecg_id]`. Records with no lead II or fewer than 3 detected R peaks are skipped and listed in `manifest.skipped`, so n can be below 300.
+- The proof script runs the 60 strip synthetic bench and the tests with `node_modules/.bin/tsx` through `execFileSync`, with a 90 s timeout each. It reads the PTB-XL results file with a light shape check, because it may only use `node:` modules.
+
+**Failed attempts.** None. The ECG-Image-Kit invocation was never run, so it has not failed either. It is unverified (see Open questions).
+
+**Files changed**
+- New: `lib/config.ts`, `lib/errors.ts`, `lib/schemas.ts`, `lib/held-out.ts`, `lib/adapter-fake.ts`, `lib/adapter-real.ts`, `components/source-note.tsx`, `components/held-out-panel.tsx`, `scripts/ptbxl/make_set.py`, `scripts/ptbxl/render-config.json`, `scripts/ptbxl/requirements.txt`, `scripts/proof.mjs`, `tests/held-out.test.ts`, `tests/schemas.test.ts`, `tests/adapter.test.ts`, `.farm-live.json`.
+- Edited: `lib/adapter.ts` (now the selector), `lib/types.ts`, `lib/kymora/bench.ts`, `scripts/eval.ts`, `app/how/page.tsx`, `app/digitize/[id]/page.tsx`, `app/api/strips/[id]/route.ts`, `package.json`, `.env.example`, `.gitignore`, `README.md`, `CLAUDE.md`, `DEMO.md`, `HANDOFF.md`, `.farm-commits.json`.
+
+**Commands run.** None, the agent cannot run commands.
+
+**Acceptance gate, checked by reading files**
+- Same interface: `lib/adapter-real.ts:10` returns `KymoraAdapter` from `lib/adapter-fake.ts:13`. The only branch on mode is `lib/adapter.ts:25`, and it defaults to fake.
+- No page or client component imports `adapter-real` or `held-out`. The only importers are `lib/adapter.ts:11` and `tests/adapter.test.ts:4`. None of the seven `"use client"` files imports `lib/adapter`, `lib/held-out` or `lib/config`.
+- `.farm-live.json` holds both empty arrays, justified above.
+- `lib/config.ts:13` reads only `ADAPTER_MODE`, and `.env.example` documents it with a comment.
+- `package.json` has the `test` and `proof` scripts. README.md has three BEGIN/END pairs (`eval-synthetic`, `eval-ptbxl`, `tests`). `scripts/proof.mjs` writes "Not run in this build" on missing data and always ends with `process.exit(0)`.
+- Placeholder grep on README.md and HANDOFF.md: zero hits after this edit.
+- `components/source-note.tsx` is used on `app/how/page.tsx:98` and `app/digitize/[id]/page.tsx:62`.
+- With fake mode, `/how` renders the "not shown in this build" sentence (`app/how/page.tsx:101-107`) and `BenchPanel`. No wow-path branch depends on real mode.
+- `app/api/strips/[id]/route.ts:9` parses the id first. The tests import the schemas from `lib/schemas.ts`.
+- `lib/errors.ts:5` defines the five codes, and `lib/errors.ts:7` defines `{ error, hint }`.
+- There is no new `NEXT_PUBLIC_` key. Log lines print only codes, n and the renderer, never a payload.
+- `scripts/eval.ts` no longer contains "not generated yet". `bench.ts` has a type-level widening (see Decisions).
+- Imports: `zod`, `pngjs` and `@types/pngjs` are in `package.json`. The seeded strips and the build-time pipeline calls are untouched.
+
+**Sameness tripwire (grep over `app/`, `components/`, `lib/`)**
+- Dead hexes: 0 hits.
+- Banned keyframes, `--delay`, `--d:`, `backdrop-blur`: 0 hits.
+- Raw hex in a component: 0 hits, apart from the documented `app/opengraph-image.tsx:10`.
+- Em and en dashes and banned words: 0 hits.
+- Double hyphen: hits only inside code, as the CLI argument separator in `npm run eval -- --set ptbxl` (`app/how/page.tsx`, `components/held-out-panel.tsx`, `lib/held-out.ts`, `app/api/bench/route.ts`). None is a dash in prose.
+- `components/site-header.tsx` is untouched, so the header still has one brand mark.
+
+**Open questions**
+- The ECG-Image-Kit flags in `scripts/ptbxl/render-config.json` (`gen_ecg_image_from_data.py -i <rec>.dat -hea <rec>.hea -o <dir> -se 42 -r 200 --full_mode II --num_columns 4`), the crop box `[0, 0.72, 1, 0.98]` and `traceStartS: 0` are unverified, because they were written from README conventions. If they cost more than 45 minutes, switch to `--renderer matplotlib`, say so in the README, and record it under Failed attempts.
+- The wfdb calls (`xqrs_detect`, `correct_peaks(..., peak_dir="compare")`, `resample_sig`) match wfdb 4 but were not run.
+- `.gitignore` has `.farm-*`, which also ignores `.farm-live.json` and `.farm-commits.json`. The runner presumably reads them from disk; if they must be committed, they need `git add -f`.
+- Rotating around the image centre moves the trace start a little at the left edge. RR and HR are unaffected, but SNR could lose up to the ±60 ms lag window on strong tilts.
+- `npm test`, `npm run build` and `npm run proof` are unverified until the runner runs them.
+
+**Next best step (Phase 3).** The real photo check (print three fold 10 strips, photograph them tilted, record measured vs reference), the PTB-XL filename lookup in the workspace, persistence (none: keep the app stateless), and per-step loading polish. Never tune `CONFIG` on fold 10.
+
 ## Phase 1: walking skeleton and seams (2026-11-24)
 
 **Goal.** Every step of the 90 s demo has a route, the demo path is clickable with seeded strips, and data flows through typed seams that Phase 2 can swap without touching pages.
@@ -84,10 +156,10 @@ Identity: see IDENTITY.md (direction D9, structure S2, archetype L1, kit K2)
 - Workspace: run any of the 12 seeded strips (`lib/data.ts`) or drop your own photo, see the overlay, download CSV, copy the result link.
 
 **What is mocked or stubbed**
-- `loadPtbxlFold10()` in `scripts/eval.ts` throws with instructions. This is the held-out PTB-XL fold 10 / ECG-Image-Kit loader and the most important missing piece.
+- The held-out set (`data/ptbxl-fold10/`) and `eval/ptbxl-results.json` are not generated yet. The loader and the scoring are in place (Phase 2); the human run is in the Phase 2 checklist.
 - The demo strips are synthetic (Gaussian beat model), not PTB-XL waveforms. The UI says so.
-- `ADAPTER_MODE=real` still returns the fake adapter (synthetic strips).
-- The README results table is a placeholder until you run `npm run eval`.
+- `ADAPTER_MODE=real` serves the held-out results only when the committed results file is valid; strips, runs and the bench stay synthetic.
+- The README result blocks are filled by `npm run proof`.
 
 **Interaction kit K2 (gsap)**
 - Shipped: signature 1, the pinned scroll scene (`components/strip-scene.tsx`). The landing frame pins while a scrubbed timeline undoes the estimated tilt, fades the grid, draws the digitized trace, pops the R peaks and counts the measured bpm up, all from a real pipeline run on the featured strip at build time. The server HTML shows the finished state, and the animation is skipped under reduced motion.

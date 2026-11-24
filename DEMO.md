@@ -21,4 +21,4 @@
 
 - All twelve seeded strips are synthetic (`lib/kymora/synth.ts`), and the UI labels them that way.
 - The real desk photo of a printed PTB-XL fold 10 strip (the wow moment with a physical strip) is recorded by the builder after Phase 2, once the held-out set exists.
-- The PTB-XL table on `/how` (`npm run eval -- --set ptbxl`) arrives in Phase 2. Until then step 5 shows the synthetic bench only.
+- Step 5: with `ADAPTER_MODE=real` and a committed `eval/ptbxl-results.json`, `/how` shows the held-out PTB-XL fold 10 table (renderer named) above the live synthetic bench. Without them, it says in one sentence that the held-out set is not generated in this build. In the terminal, `npm run eval -- --set ptbxl` prints the same table.

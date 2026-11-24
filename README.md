@@ -45,13 +45,37 @@ npm run eval                          # seed 42, 200 strips, writes eval/results
 npm run eval -- --seed 7 --n 500      # any other seed or size
 ```
 
-The output table and `eval/results.json` include the full `CONFIG` object (every threshold the pipeline uses). Paste the table here after running it:
+The output table and `eval/results.json` include the full `CONFIG` object (every threshold the pipeline uses). `npm run proof` reruns a 60 strip version (seed 42) and writes the table into the block below:
 
-```
-(results table from npm run eval goes here)
-```
+<!-- PROOF:BEGIN eval-synthetic -->
+Command: `npm run eval -- --seed 42 --n 60 --out eval/proof-synthetic.json`
 
-**Layer 2, held-out clinical set (in progress).** This uses PTB-XL fold 10, the test fold recommended by the dataset authors. Lead II is read with `wfdb` and rendered as paper rhythm strips by ECG-Image-Kit with a fixed seed and config (tilt, blur, JPEG, shadow). Reference R peaks come from the source signal. The loader stub is `loadPtbxlFold10()` in `scripts/eval.ts` (`npm run eval -- --set ptbxl`). We will report results from real phone photos of printed PTB-XL strips in a separate small table, because those will be worse than the synthetic numbers.
+```text
+Kymora synthetic bench: seed 42, 60 strips
+
+method                                     n   HR MAE (bpm)  RR MAE (ms)  SNR (dB)  rejected
+-----------------------------------------  --  ------------  -----------  --------  --------
+Kymora (grid calibration + quality gate)   3   0.13          1.2          13.67     95.0%   
+Baseline (300 DPI assumed, darkest pixel)  59  39.44         277.5        -3.20     1.7%    
+Baseline on the strips Kymora accepted     3   23.67         130.9        -4.30     0.0%    
+
+config: {"maxSkewDeg":8,"skewStepDeg":0.25,"minPxPerMm":3,"maxPxPerMm":40,"gridRedMargin":6,"inkLumRatio":0.6,"inkRedMargin":25,"minColumnMass":15,"fs":250,"qualityThreshold":0.6,"minDurationS":4,"minHeartRate":25,"maxHeartRate":220}
+```
+<!-- PROOF:END eval-synthetic -->
+
+**Layer 2, held-out clinical set.** This uses PTB-XL fold 10, the test fold recommended by the dataset authors. `scripts/ptbxl/make_set.py` takes the first 300 fold 10 records by `ecg_id`, reads lead II at 500 Hz with `wfdb`, and detects reference R peaks on the source signal (`wfdb.processing.xqrs_detect`). It renders each record as a paper strip image with ECG-Image-Kit (or, as the documented fallback, a small seeded matplotlib renderer), then applies the same seeded tilt, blur, shadow and JPEG degradations from the committed `scripts/ptbxl/render-config.json`. The manifest records the renderer, the seed and, per image, `traceStartS` (where the trace starts on the image). `npm run eval -- --set ptbxl` decodes each PNG with `pngjs`, scores it with `evaluateRaster()` in `lib/kymora/bench.ts` (the same scoring code as the synthetic bench) and writes `eval/ptbxl-results.json`. The `/how` page reads that committed file through a zod schema when `ADAPTER_MODE=real`. Fold 10 is never used for tuning. Results from real phone photos of printed PTB-XL strips will go in a separate small table, because they will be worse than these numbers.
+
+<!-- PROOF:BEGIN eval-ptbxl -->
+Not run in this build: data/ptbxl-fold10 has not been generated (needs Python, wfdb and a local PTB-XL copy).
+<!-- PROOF:END eval-ptbxl -->
+
+**Tests.** `npm test` runs the scoring, schema and adapter tests in `tests/` with `node:test`.
+
+<!-- PROOF:BEGIN tests -->
+```text
+npm test: 14 tests, 14 passed, 0 failed (3 files, node:test via tsx)
+```
+<!-- PROOF:END tests -->
 
 ## Who benefits, and who could be harmed
 
@@ -73,7 +97,7 @@ Perspective correction from the four corners of the grid. A learned trace extrac
 
 ## Tech stack
 
-Next.js 15 (App Router), React 19, TypeScript 5 (strict), Tailwind CSS 4, shadcn-style primitives, GSAP 3 with ScrollTrigger and `@gsap/react` (the pinned scene on the landing page), HTML canvas ImageData, tsx for `npm run eval` and `npm run seed`. Deployed as a Vercel site. The held-out set also needs Python with `wfdb` and ECG-Image-Kit, but the web app doesn't.
+Next.js 15 (App Router), React 19, TypeScript 5 (strict), Tailwind CSS 4, shadcn-style primitives, GSAP 3 with ScrollTrigger and `@gsap/react` (the pinned scene on the landing page), zod 3 (validation at every data edge), pngjs 7 (eval only, decodes the held-out images), HTML canvas ImageData, tsx for `npm run eval`, `npm run seed` and `npm test`. Deployed as a Vercel site. The held-out set builder needs Python with `wfdb`, numpy, matplotlib and Pillow (`scripts/ptbxl/requirements.txt`), plus ECG-Image-Kit for the default renderer, but the web app doesn't.
 
 There are no machine-learning models in the app. Everything is signal processing.
 
@@ -84,20 +108,26 @@ npm install
 npm run dev        # http://localhost:3000
 npm run eval       # reproduce the evaluation table
 npm run seed       # list the 12 seeded strips and their reference heart rate
+npm test           # scoring, schema and adapter tests (node:test via tsx)
+npm run proof      # rerun the proofs and rewrite the PROOF blocks in this README
 ```
 
-No secrets or API keys are needed. One optional variable, `ADAPTER_MODE` (default `fake`, the seeded synthetic strips), selects the data source behind `lib/adapter.ts`; see `.env.example`.
+No secrets or API keys are needed. One optional variable, `ADAPTER_MODE` (default `fake`, the seeded synthetic strips), selects the data source behind `lib/adapter.ts`. `real` serves the committed held-out results when `eval/ptbxl-results.json` is valid, otherwise the app stays on fake. See `.env.example`.
 
 Routes: `/` story, `/digitize` workspace, `/digitize/<strip-id>` shareable result, `/how` method and evaluation.
 
 ## Held-out set
 
+You need Python 3, a local PTB-XL copy from PhysioNet (about 2 GB on disk) and, for the default renderer, a local clone of ECG-Image-Kit. The script never downloads anything.
+
 ```bash
-pip install wfdb
-# 1. Download PTB-XL from PhysioNet and keep records whose strat_fold == 10.
-# 2. Render lead II rhythm strips with ECG-Image-Kit (fixed seed, config committed next to the images).
-# 3. Write data/ptbxl-fold10/manifest.json, then implement loadPtbxlFold10() in scripts/eval.ts.
+pip install -r scripts/ptbxl/requirements.txt
+python scripts/ptbxl/make_set.py --ptbxl-root <path> --renderer ecgkit --ecgkit-dir <ecg-image-kit clone>
+# fallback without ECG-Image-Kit: python scripts/ptbxl/make_set.py --ptbxl-root <path> --renderer matplotlib
+npm run eval -- --set ptbxl
 ```
+
+This writes `data/ptbxl-fold10/manifest.json`, `data/ptbxl-fold10/reference/*.json` (lead II in mV at 100 Hz), the images in `data/ptbxl-fold10/images/` (gitignored) and `eval/ptbxl-results.json`. The manifest, the reference files and the results file are committed. The default seed is 42. The ECG-Image-Kit command line flags and the rhythm strip crop in `render-config.json` follow its README and have not been verified by a run yet.
 
 ## Attribution
 
@@ -110,4 +140,4 @@ pip install wfdb
 ## AI use
 
 <!-- Adjust this section to each hackathon's disclosure rules. -->
-We used AI coding assistants for scaffolding and boilerplate. Architecture, product decisions, and final code review are our own. Tools: Claude Code (scaffolding the Next.js app, first drafts of the pipeline functions and this README, which we then reviewed, tested and edited).
+We used AI coding assistants for scaffolding and boilerplate. Architecture, product decisions, and final code review are our own. Tools: Claude Code (scaffolding the Next.js app, first drafts of the pipeline functions, the PTB-XL set builder, the held-out eval loader, the tests and this README, which we then reviewed, tested and edited). No AI model runs inside Kymora itself.

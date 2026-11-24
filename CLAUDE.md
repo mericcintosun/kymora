@@ -6,14 +6,17 @@ Read `IDENTITY.md` first (it overrides taste), then `HANDOFF.md`, then `DEMO.md`
 
 - `npm run dev`: local dev server on http://localhost:3000
 - `npm run build`: production build. The landing page and the 12 result pages run the pipeline at build time.
-- `npm run eval`: synthetic bench, seed 42, 200 strips, writes `eval/results.json`. `npm run eval -- --seed 7 --n 500` for other sizes. `--set ptbxl` throws until Phase 2 implements `loadPtbxlFold10()`.
+- `npm run eval`: synthetic bench, seed 42, 200 strips, writes `eval/results.json`. `npm run eval -- --seed 7 --n 500` for other sizes. `npm run eval -- --set ptbxl` scores the PNGs in `data/ptbxl-fold10/` (built by `scripts/ptbxl/make_set.py`) and writes `eval/ptbxl-results.json`; without the set it exits 1 with one sentence naming `make_set.py`.
 - `npm run seed`: prints the 12 seeded strip ids and their reference bpm. Writes nothing, so it is idempotent.
+- `npm test`: `tsx --test tests/*.test.ts` (scoring, schemas, adapter selector).
+- `npm run proof`: reruns the proofs and rewrites the `PROOF` blocks in README.md. Always exits 0.
 
 ## Data seam
 
-- Pages and API routes read seeded data through `getAdapter()` in `lib/adapter.ts`. Shared types live in `lib/types.ts`.
-- `ADAPTER_MODE` (`fake` by default, see `.env.example`). `real` still returns the fake adapter until Phase 2 swaps in PTB-XL results.
-- API stubs: `/api/strips`, `/api/strips/[id]`, `/api/bench`. They return `ApiResponse<T>`. None of them accepts images.
+- Pages and API routes read data through `getAdapter()` in `lib/adapter.ts`, the selector and the only file that branches on `ADAPTER_MODE`. Fake lives in `lib/adapter-fake.ts`, real in `lib/adapter-real.ts` (imported only by the selector). Shared types live in `lib/types.ts`, zod schemas in `lib/schemas.ts`, error codes in `lib/errors.ts`, env and paths in `lib/config.ts` (the only `process.env` reader besides `next.config.ts` and `lib/brand-files.ts`).
+- `ADAPTER_MODE` (`fake` by default, see `.env.example`). `real` serves the committed `eval/ptbxl-results.json` through `getHeldOut()` when it passes `heldOutResultsSchema` (`lib/held-out.ts`, server only); otherwise it falls back to fake and logs `[core] adapter fake reason=<code>`. Strips, runs and the bench stay synthetic in both modes.
+- API stubs: `/api/strips`, `/api/strips/[id]` (id parsed with `stripIdSchema`, 400 `{ ok: false, error, hint }` on a bad id), `/api/bench`. They return `ApiResponse<T>`. None of them accepts images.
+- Keep imports in `lib/`, `scripts/` and `tests/` relative (no `@/`) so tsx resolves them.
 
 ## Stack pitfalls
 
