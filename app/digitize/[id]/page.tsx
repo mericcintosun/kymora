@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { LocalResult } from "@/components/local-result";
 import { ResultView } from "@/components/result-view";
+import { SceneSlot } from "@/components/scene-slot";
 import { SourceNote } from "@/components/source-note";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -95,6 +96,15 @@ export default async function ResultPage({ params }: { params: Promise<{ id: str
           <Link href={`/digitize?strip=${strip.id}`}>Reopen in the workspace</Link>
         </Button>
       </section>
+
+      <div className="mt-14 max-w-md">
+        <SceneSlot n={4}
+          alt="A straightened ECG strip resting on stepped sand panels, a green trace on the ink with oxblood dots on each beat, and a sun disc above the horizon line"
+          width={800}
+          height={720}
+          className="rounded-md border border-border"
+        />
+      </div>
     </div>
   );
 }

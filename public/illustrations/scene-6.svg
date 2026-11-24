@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 240" width="1600" height="240">
+  <rect width="1600" height="240" fill="#f4e9d8"/>
+  <circle cx="1180" cy="140" r="90" fill="#8e2f2f"/>
+  <rect y="140" width="1600" height="100" fill="#ecdcc3"/>
+  <rect y="140" width="1600" height="3" fill="#d2bd98"/>
+  <rect y="176" width="1600" height="20" fill="#e2cfae"/>
+  <rect y="214" width="1600" height="12" fill="#d2bd98"/>
+  <rect x="160" y="104" width="760" height="56" rx="6" fill="#f4e9d8" stroke="#d2bd98" stroke-width="2"/>
+  <g stroke="#8c3041" stroke-opacity="0.22" stroke-width="1">
+    <path d="M200 104V160M240 104V160M280 104V160M320 104V160M360 104V160M400 104V160M440 104V160M480 104V160M520 104V160M560 104V160M600 104V160M640 104V160M680 104V160M720 104V160M760 104V160M800 104V160M840 104V160M880 104V160"/>
+    <path d="M160 123H920M160 142H920"/>
+  </g>
+  <path d="M170 140H230L240 133L250 140H262L268 146L278 112L288 150L296 140H330Q344 128 358 140H420L430 133L440 140H452L458 146L468 112L478 150L486 140H520Q534 128 548 140H610L620 133L630 140H642L648 146L658 112L668 150L676 140H710Q724 128 738 140H800L810 133L820 140H832L838 146L848 112L858 150L866 140H910" fill="none" stroke="#2e7d4f" stroke-width="3" stroke-linejoin="round"/>
+</svg>

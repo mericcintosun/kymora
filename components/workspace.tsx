@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ResultView, type ResultReference } from "@/components/result-view";
+import { SceneSlot } from "@/components/scene-slot";
 import { EmptyState, ErrorState, WorkspaceSkeleton } from "@/components/states";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -291,7 +292,17 @@ export function Workspace({
       {state.kind === "empty" && (
         <EmptyState
           title="No strip selected yet"
-          message="Pick one of the seeded strips above, or drop a photo of your own strip on the sand panel. The trace, heart rate and RR intervals will appear here."
+          message={
+            <div className="space-y-4">
+              <p>Pick a seeded strip above or drop your own photo, and the trace, heart rate and RR intervals appear here.</p>
+              <SceneSlot n={5}
+                alt="An empty sand-coloured desk under a low sun disc, with a dashed oxblood outline where a printed ECG strip will be dropped"
+                width={960}
+                height={400}
+                className="max-w-xl rounded-md border border-border"
+              />
+            </div>
+          }
           cta={<Button onClick={() => void runSeed(featuredId)}>Run the example strip</Button>}
         />
       )}
