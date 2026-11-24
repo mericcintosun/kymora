@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "eval": "tsx scripts/eval.ts",
-    "seed": "tsx scripts/seed.ts"
+    "seed": "tsx scripts/seed.ts",
+    "test": "tsx --test tests/*.test.ts",
+    "proof": "node scripts/proof.mjs"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
@@ -19,13 +21,16 @@
     "next": "^15.4.5",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "tailwind-merge": "^3.0.1"
+    "tailwind-merge": "^3.0.1",
+    "zod": "^3.25.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.11",
     "@types/node": "^24",
+    "@types/pngjs": "^6.0.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "pngjs": "^7.0.0",
     "tailwindcss": "^4.1.11",
     "tsx": "^4.20.3",
     "typescript": "^5"
