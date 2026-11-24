@@ -2,6 +2,74 @@
 
 You are picking up a working Next.js 15 scaffold. Read this file, then `IDENTITY.md`, then `CLAUDE.md` and `DEMO.md`, then `lib/kymora/pipeline.ts`. Start building right away; everything you need is here.
 
+## Phase 4: judge surface, second wow, polish and security pass (2026-11-24)
+
+**Goal.** Make the live URL work on a phone and on desktop, add signature 3 (a figure tween on `/how`) and signature 2 (the landing intro), write the prize table, DELIVERY.md and SECURITY.md, and sweep for web security issues.
+
+**Status.** All five slices are written. The agent built, ran and tested nothing because it cannot run commands. `npm run build`, `npm test`, the 360/768/1280 px check, Lighthouse and the reduced-motion check are all the runner's or the human's job.
+
+**Decisions**
+- Prize table: no `sponsor-bounty` rows exist in `targetTracks` (four organizer categories, all `entryMode: automatic`, `requiredTech: []`). No integration and no cost was dropped. The seat rule is not triggered, and no two bounties share an architectural seat.
+- Slots: the record gives 1 slot for the Grand Prize only. The other three rows say "not stated" instead of an invented number.
+- DEMO step column after the renumber: Grand Prize 2 to 6, Research 5 and 6, Presentation 2 to 7, Logo 1 and 7.
+- Contract front skipped, no `contracts/` directory and no chain in this project.
+- Wallet front: grep over `app/`, `components/`, `lib/` for `eth_requestAccounts|eth_sign|personal_sign|window\.ethereum|approve\(|connect\(` returned 0 matches. The wallet-hygiene rules verify vacuously. No Blockaid warning is expected, because there is no wallet code.
+- Mobile nav: `components/mobile-nav.tsx` (client) renders a `md:hidden` "Menu" button with `aria-expanded` and `aria-controls="kymora-mobile-nav"`, and a solid ground panel (`absolute inset-x-0 top-full border-b border-border bg-background`) listing `/digitize`, `/digitize/<featured>`, `/how` and the CTA. It closes on `usePathname` change and on Escape. The desktop switch moved from `sm:` to `md:` (`components/nav-links.tsx:25`, `components/site-header.tsx:34`). The header still shows two links plus the CTA from md up, and three links plus the CTA in the panel. One brand mark (`components/site-header.tsx:29`).
+- Touch targets: the shared `Button` sizes are now `min-h-11` (sm and default), `min-h-12` (lg) and `size-11` (icon) (`components/ui/button.tsx:21-26`), which covers strip buttons, CSV, copy link, retry and the bench buttons. Nav links, the brand link, footer links, the landing text link and the result-page breadcrumb got `min-h-11` or `py-3`.
+- Signature 3 lives in `components/held-out-panel.tsx` as the exported `FigureTween`, so the file that the gate names holds the `useGSAP` call, the matchMedia `reduce` branch and the toggle. `HeldOutPanel` became a client component for that. `components/bench-panel.tsx` renders the same `FigureTween` in its done state as the fallback when the held-out file is absent. GSAP tweens one plain proxy object and paints the figures and bars from it. Values come only from `results.rows[0..1]` plus `results.histogram` (zod-checked) or the bench summary that just ran. A null MAE reads "n/a". Bars share one scale across both methods. The static table and the two small-multiple histograms stay.
+- Signature 2: `components/landing-intro.tsx` splits the headline into word spans by hand and runs a timeline (words stagger, then the `data-intro-frame` scene band scales from 0.96). It uses `gsap.from` after hydration only, under `(prefers-reduced-motion: no-preference)`, with `clearProps`. The server HTML is the final visible state. The h1 lost its CSS `kymora-enter` so the two animations do not overlap.
+- Landing copy: new headline "Paper ECG strips, measured in your browser." (the old "millisecond." was about as wide as a 360 px screen at 3.5rem). The hero paragraph pulls its numbers from `CONFIG` (`maxSkewDeg`, `fs`, `qualityThreshold`) and was kept short so the CTA stays in the first viewport on a phone.
+- Metadata: `metadataBase` now points at `https://kymora-eight.vercel.app`, the live URL in README.md, because the og:image URL resolves against it. It used to say `kymora.vercel.app`. See Open questions.
+- `app/digitize/[id]/page.tsx:48` used `console.log` (the spec assumed `console.error`), and it is now `console.error`. The `console.log` lines in `lib/` (adapter fallback, held-out and lookup status) are server-only `[core]` logs outside the grep scope and stay.
+- Footer: repo link and a SECURITY.md link, both `target="_blank" rel="noopener noreferrer"`, with no new route (`app/layout.tsx:70-83`).
+
+**Responsive audit (before the fixes)**
+- `components/result-view.tsx`: canvas and overlay are already `w-full h-auto` in an `overflow-hidden` figure. The figures grid is `md:grid-cols-3` (one column below md). Buttons were 32 to 36 px tall, now 44 px. The footer wraps.
+- `components/workspace.tsx`: strip buttons were `size="sm"` (32 px), now 44 px. The drop label is `p-5`, well over 44 px. A dropped file name in the result h2 could overflow, so it now has `break-all` plus `title`.
+- `components/local-result.tsx`: the stored label h2 got the same `break-all` plus `title`.
+- `components/bench-panel.tsx` and `components/held-out-panel.tsx`: both tables were already in `overflow-x-auto` (`min-w-[36rem]` with `w-full`). The histograms are `w-full max-w-full`. "Run again (same seed, same numbers)" can now wrap.
+- `components/states.tsx`: error and empty messages got `break-words`, because they can contain a long file name.
+- `app/page.tsx`: the sun disc `sm:size-[30rem]` is decorative inside `overflow-hidden`, and it got `max-w-full`. The headline is covered above. The landing has no other fixed width over 360 px.
+- `app/not-found.tsx`, `app/error.tsx` and the three route `error.tsx` files render inside `app/layout.tsx`. There is no `global-error.tsx`, so the header, the mobile nav and the footer stay. No change needed.
+
+**Security and hygiene greps (over `app/`, `components/`, `lib/`)**
+- `sk-|PRIVATE_KEY|[0-9a-fA-F]{64}|[A-Za-z0-9+/]{120,}`: 0 matches. The only `NEXT_PUBLIC_` key is `NEXT_PUBLIC_BRAND_FILES` (public image names).
+- `target="_blank"`: 2 matches, both in `app/layout.tsx`, both with `rel="noopener noreferrer"`.
+- `http://`: only `app/icon.svg:1` (the SVG namespace, not a request).
+- `<form`: 0 matches.
+- `process.env`: `lib/config.ts:13` (`ADAPTER_MODE`) and `lib/brand-files.ts:2` (`NEXT_PUBLIC_BRAND_FILES`). Both are in `.env.example`. `.farm-live.json` stays `{ "requiredEnv": [], "optionalEnv": [] }`.
+- `useSearchParams`: 0 matches. `/digitize` reads `searchParams` as a Promise in the server page (`app/digitize/page.tsx:10`).
+- `writeFile|appendFile|createWriteStream|fs\.`: 0 matches. Reads: `readFileSync` in `lib/held-out.ts:26` (`eval/ptbxl-results.json`) and `lib/ptbxl-lookup.ts:29` (`eval/ptbxl-lookup.json`), both committed eval files.
+- API routes: all three export only `GET`. None receives images.
+- Found but not fixed: nothing.
+
+**Sameness tripwire (over `app/`, `components/`)**
+- Hex literals: only `app/globals.css` (the tokens), `app/opengraph-image.tsx:10` (documented mirror) and `app/icon.svg` (never-touch file, documented since Phase 1). There are no dead hexes.
+- Keyframes: only `kymora-scale-in` (`app/globals.css:113`). Banned keyframes, `--delay`, `--d:` and `backdrop-blur`: 0 matches.
+- Em and en dashes and banned words: 0 matches in `app/`, `components/`, README.md, DEMO.md and DELIVERY.md. The only HANDOFF matches are the banned-word lists themselves.
+- The figure readout in `FigureTween` is a plain `dl` next to the chart in Spectral, with no tiles, no mono and no band. One brand mark in the header.
+
+**Failed attempts.** None.
+
+**Files changed**
+- New: `DELIVERY.md`, `SECURITY.md`, `components/mobile-nav.tsx`, `components/landing-intro.tsx`.
+- Edited: `README.md`, `DEMO.md`, `HANDOFF.md`, `components/site-header.tsx`, `components/nav-links.tsx`, `components/ui/button.tsx`, `components/held-out-panel.tsx`, `components/bench-panel.tsx`, `components/workspace.tsx`, `components/local-result.tsx`, `components/states.tsx`, `app/page.tsx`, `app/layout.tsx`, `app/opengraph-image.tsx`, `app/digitize/[id]/page.tsx`.
+- Untouched: `app/icon.svg`, `lib/kymora/*` (including `CONFIG`), `eval/*.json`, `package.json`, `.env.example`, `.farm-live.json`, the `busyRef` and `fileKey` guards.
+
+**Commands run.** None, the agent cannot run commands.
+
+**Unmet or unverified items**
+- `npm run build`, `npm test`, Lighthouse of 80 or more, the og:image absolute URL, and no horizontal scroll at 360/768/1280 px are all unverified.
+- GSAP typing: `ctx.conditions?.reduce` and `ReturnType<typeof gsap.matchMedia>` follow the gsap 3.12+ types. If the build rejects either, `(ctx.conditions as Record<string, boolean> | undefined)?.reduce` is the shortest fix.
+- The `README.md` demo-reset proof block still shows "FAIL sinus-72-tilted: accepted, no bpm". That is the Phase 3 output, and pipeline accuracy is out of scope for this phase. The landing scene falls back to the next accepted strip, or to its `EmptyState`.
+- The `aria-pressed:` Tailwind variant styles the active toggle. If it does not apply, the toggle still works and only the pressed fill is missing.
+
+**Open questions**
+- Which host is live: `kymora-eight.vercel.app` (README) or `kymora.vercel.app` (HANDOFF definition of done)? `metadataBase` now uses the README host. If the deploy is the other one, change `app/layout.tsx:29`.
+- Slot counts for the three non-Grand categories are not in the record.
+
+**Next best step.** Phase 5, the frontend pass. Before that, the human walks DEMO steps 1 to 7 on the live URL at 360, 768 and 1280 px with reduced motion on and off, works through the "Before submitting" list in DELIVERY.md, and finishes the Phase 2 checklist plus `npm run lookup`.
+
 ## Phase 3: demo path states, guards and reset (2026-11-24)
 
 **Goal.** Make the whole DEMO.md path safe around the Phase 2 held-out mechanism: a PTB-XL reference for dropped photos named after their ecg_id, loading, error-with-retry and empty states on every demo route, guards against double drops, and a `demo:reset` determinism check.
