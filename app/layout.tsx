@@ -17,14 +17,34 @@ const rubik = Rubik({
   variable: "--font-rubik",
 });
 
+const TITLE = "Kymora: paper ECG strips measured on-device";
+// 144 characters: the problem, then the fix.
+const DESCRIPTION =
+  "Paper ECGs get measured by eye with a ruler. Kymora reads a phone photo of a lead II strip in your browser: heart rate, RR intervals, no upload.";
+
+const REPO_URL = "https://github.com/mericcintosun/kymora";
+
 export const metadata: Metadata = {
-  metadataBase: new URL("https://kymora.vercel.app"),
+  // The live URL from README.md. og:image resolves against it, so it must be the deployed host.
+  metadataBase: new URL("https://kymora-eight.vercel.app"),
   title: {
-    default: "Kymora: paper ECG strips, measured in your browser",
+    default: TITLE,
     template: "%s | Kymora",
   },
-  description:
-    "Kymora turns a phone photo of a printed lead II ECG strip into a millivolt and millisecond signal, measures heart rate and RR intervals in the browser, and refuses to answer when the photo cannot support a measurement.",
+  description: DESCRIPTION,
+  // The og:image and twitter:image tags come from app/opengraph-image.tsx (1200x630).
+  openGraph: {
+    title: TITLE,
+    description: DESCRIPTION,
+    type: "website",
+    siteName: "Kymora",
+    url: "/",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESCRIPTION,
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -40,14 +60,29 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               Kymora is a research prototype for the AI for Medicine student hackathon. It measures rhythm on a single
               lead II strip and does not diagnose. Photos are processed on your device and never uploaded.
             </p>
-            <nav aria-label="Footer" className="flex gap-4">
-              <Link href="/digitize" className="hover:text-foreground">
+            <nav aria-label="Footer" className="flex flex-wrap gap-x-4">
+              <Link href="/digitize" className="inline-flex min-h-11 items-center hover:text-foreground">
                 Workspace
               </Link>
-              <Link href="/how" className="hover:text-foreground">
+              <Link href="/how" className="inline-flex min-h-11 items-center hover:text-foreground">
                 Method
               </Link>
+              <a href={REPO_URL} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center hover:text-foreground">
+                Source on GitHub
+              </a>
             </nav>
+            <p className="sm:col-span-2">
+              Data handling and security notes:{" "}
+              <a
+                href={`${REPO_URL}/blob/main/SECURITY.md`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block py-3 underline decoration-line underline-offset-4 hover:text-foreground"
+              >
+                SECURITY.md
+              </a>
+              . No wallet, no account, no upload.
+            </p>
           </div>
         </footer>
       </body>
