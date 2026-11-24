@@ -13,8 +13,15 @@ const brandFiles = fs.existsSync(brandDir)
       .map((f) => f.slice(0, -4))
   : [];
 
+// Build marker rendered as <meta name="kymora-build"> on every page: the git commit when
+// Vercel provides it, plus the build time. Not a secret, not configurable.
+const buildMarker = [
+  (process.env.VERCEL_GIT_COMMIT_SHA ?? "local").slice(0, 7),
+  new Date().toISOString(),
+].join(" ");
+
 const nextConfig: NextConfig = {
-  env: { NEXT_PUBLIC_BRAND_FILES: brandFiles.join(",") },
+  env: { NEXT_PUBLIC_BRAND_FILES: brandFiles.join(","), NEXT_PUBLIC_KYMORA_BUILD: buildMarker },
   // /digitize renders on request and reads these with node:fs (lib/ptbxl-lookup.ts,
   // lib/held-out.ts), which file tracing cannot see. Top-level key in Next 15
   // (node_modules/next/dist/server/config-shared.d.ts). Missing files are simply skipped.

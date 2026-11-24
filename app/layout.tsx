@@ -48,6 +48,9 @@ export const metadata: Metadata = {
     title: TITLE,
     description: DESCRIPTION,
   },
+  // Which build is live: <meta name="kymora-build">. Set in next.config.ts at build time,
+  // so a crawl can tell a stale production alias from a code bug (HANDOFF, QA rounds 1 to 4).
+  other: { "kymora-build": process.env.NEXT_PUBLIC_KYMORA_BUILD ?? "unknown" },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
