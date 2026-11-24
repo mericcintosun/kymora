@@ -2,6 +2,72 @@
 
 You are picking up a working Next.js 15 scaffold. Read this file, then `IDENTITY.md`, then `CLAUDE.md` and `DEMO.md`, then `lib/kymora/pipeline.ts`. Start building right away; everything you need is here.
 
+## Phase 5: frontend pass, scene and submission package (2026-11-24)
+
+**Goal.** Make the live URL read as a finished product in its first 10 seconds (clean L1 poster, a pinned scene with real numbers, shadcn-only controls, six scene slots) and ship a Devpost package that can be pasted as is.
+
+**Status.** All four slices are written. The agent built, ran and tested nothing, because it cannot run commands. All ten BEFORE screenshots opened. They show the Phase 3 headline ("Paper ECG, read to the millisecond.") and a footer without the repo link, so the live deploy predates the Phase 4 commit; the diagnosis in `.farm-delta.md` only lists defects still present in the source.
+
+**Decisions**
+- Hero: `components/landing-intro.tsx` now renders the whole L1 hero section (sun disc, horizon line, headline, children) plus a `frame` prop, so the intro timeline and the new scroll-linked headline share one `useGSAP` scope. The hero is `min-h-[calc(100svh-4rem)]` with the content centred, so the CTA stays in the first viewport and the scene-1 band sits just below the fold. The sun disc moved from behind the words to the horizon line at the bottom right, `md:` and up only.
+- Scroll-linked headline: Spectral ships as static 400/600/700 files, so a weight tween is not possible without a variable font (a new dependency). The headline scales to 92% from its bottom-left corner while the hero scrolls out (scrubbed, `transform` only, so the CTA never moves).
+- Pinned scene (`components/strip-scene.tsx`): pins only from 768 px up and for 900 px (was 1600 px on every width, which left a blank screen in the full-page shots and a whole blank phone screen). Phones get the same scrubbed timeline without a pin. The rate counter now tweens from the uncalibrated baseline's bpm on the same image to Kymora's bpm, both pipeline outputs; it never starts at 0. Stage labels stay at full opacity and an oxblood underline marks progress. The figure gets the M3 `kymora-enter` keyframe when it scrolls into view. On phones the drawing keeps a 40rem width inside a keyboard-focusable scroll box.
+- Scene strip choice (`app/page.tsx`): the featured strip if Kymora accepts it with a rate, else the most tilted accepted strip with a rate, each `runStrip` in try/catch so a pipeline throw cannot break the static build. The old code accepted a strip with a null rate and printed `?? 0`, which is where "Measured 0 bpm" came from.
+- Simplification: "What it will not do" is three strata bands with one sentence each; the twelve-strip list folds behind a one-line `<details>` without pill tags; the `/how` "Reproduce it" card folds into a `<details>`. The "Who benefits" and "Who could be harmed" cards on `/how` stay because DEMO step 5 names them.
+- Footer: one sentence plus Workspace, Method, Source on GitHub, the AI for Medicine hackathon page and SECURITY.md.
+- shadcn discipline: the mobile Menu disclosure and the FigureTween toggle now use `Button` (`variant` follows the pressed state, `aria-pressed` kept, keyboard path is the native button). `Input` got `min-h-11`. `CardFooter` lost its `/40` tint.
+- `scripts/proof.mjs` now also rewrites the `eval-synthetic` and `eval-ptbxl` blocks in `SUBMISSION.md`, so the Devpost text cannot drift from the README. No new measured number.
+- README: two-sentence top, live URL with the step to click, "Try it in 60 seconds", a mermaid diagram of the real modules, quickstart cut to 5 commands, an addresses table with the live URL row only, the hackathon AI policy quoted, and a sentence under the demo-reset proof explaining the open "accepted, no bpm" failure. The PROOF block itself is untouched.
+- No LICENSE file exists at the repo root. Choosing a license is the team's call, so the README says that no license file is committed yet, and adding one is in the manual checklist.
+- IDENTITY.md is unchanged; no amendment was needed. No new dependency, env variable, route or schema change.
+
+**Signature interactions (file, seed source)**
+1. Pinned scroll scene: `components/strip-scene.tsx`, numbers from `runStrip()` (`lib/kymora/bench.ts`) on the seeded strips in `lib/data/seed.ts`, computed in `app/page.tsx` at build time.
+2. Intro timeline and scroll-linked headline: `components/landing-intro.tsx`, text from the headline constant in `app/page.tsx`.
+3. Figure tween bound to a control: `FigureTween` in `components/held-out-panel.tsx`, numbers from `eval/ptbxl-results.json` (zod-checked) or the bench summary in `components/bench-panel.tsx`.
+
+**Scene slots (slot, route, file, source)**
+- scene-1: `/`, `app/page.tsx` hero horizon band, 1600x280, SVG fallback `public/illustrations/scene-1.svg`.
+- scene-2: `/`, `app/page.tsx` problem section, 960x640, SVG fallback `public/illustrations/scene-2.svg`.
+- scene-3: `/how`, `app/how/page.tsx`, 960x640, SVG fallback `public/illustrations/scene-3.svg`.
+- scene-4: `/digitize/[id]`, `app/digitize/[id]/page.tsx`, 800x720 (near square), SVG fallback `public/illustrations/scene-4.svg` (new).
+- scene-5: `/digitize`, the empty state in `components/workspace.tsx`, 960x400, SVG fallback `public/illustrations/scene-5.svg` (new).
+- scene-6: `/`, `app/page.tsx` closing band, 1600x240, SVG fallback `public/illustrations/scene-6.svg` (new).
+- All six render the SVG fallback, because `public/brand/` has no rasters. Uploading `public/brand/scene-N.png` switches a slot automatically. No raster logo exists either, so no Marka rerun note applies.
+
+**Routes (route, file, linked from)**
+- `/`: `app/page.tsx`, brand link in the header.
+- `/digitize`: `app/digitize/page.tsx`, header CTA (with `?strip=sinus-72-tilted`), mobile menu, footer.
+- `/digitize/[id]`: `app/digitize/[id]/page.tsx`, header "Example result", landing strip list.
+- `/how`: `app/how/page.tsx`, header "Method & evaluation", landing text link, footer.
+- Header: two links plus the CTA from md up; three links plus the CTA in the mobile panel. One brand mark through `<BrandMark />` (`components/site-header.tsx:28-31`).
+
+**Failed attempts.** None.
+
+**Files changed**
+- New: `SUBMISSION.md`, `public/illustrations/scene-4.svg`, `scene-5.svg`, `scene-6.svg`, `.farm-delta.md`, `.farm-commits.json`.
+- Edited: `app/page.tsx`, `app/layout.tsx`, `app/how/page.tsx`, `app/digitize/[id]/page.tsx`, `components/landing-intro.tsx`, `components/strip-scene.tsx`, `components/held-out-panel.tsx`, `components/mobile-nav.tsx`, `components/workspace.tsx`, `components/ui/input.tsx`, `components/ui/card.tsx`, `scripts/proof.mjs`, `README.md`, `HANDOFF.md`.
+- Untouched: `public/__farm.txt`, `app/icon.svg`, `public/logo.svg`, `public/illustrations/scene-1..3.svg`, `scripts/ptbxl/*`, `lib/kymora/*` (including `CONFIG`), `eval/*.json`, `package.json`, `.env.example`, `.gitignore` (already covers `.env*` with `!.env.example`), `.farm-live.json`, `IDENTITY.md`, `app/globals.css` (tokens already equal IDENTITY; the one `kymora-scale-in` keyframe and its reduced-motion block already existed), the Phase 4 wallet-hygiene decisions (no wallet code exists).
+
+**Commands run.** None, the agent cannot run commands.
+
+**Unmet or unverified items**
+- `npm run build`, `npm test`, `npm run proof`, Lighthouse, the 360/768/1280 px check and the reduced-motion check are unverified.
+- `git diff --stat` will not include `app/globals.css`, which the runner's check expects: the tokens and the M3 keyframe were already correct, and no edit was needed.
+- GSAP typing: `mm.add(query, fn, scope)` passes an element as the scope (`components/strip-scene.tsx`, `components/landing-intro.tsx`). If the build rejects the third argument, delete it; the `useGSAP` scope still applies.
+- scene-5 lives in the workspace empty state, which only shows when no strip is loaded. The workspace always preloads a strip, so judges will rarely see it.
+- Not every `/how` section is one sentence plus a visual: the six pipeline steps keep a paragraph each (judges may ask what a function does), and the benefit and harm cards stay for DEMO step 5.
+- The featured strip may still have no rate (README demo-reset proof). The landing scene then shows another seeded strip, and DEMO steps 2 and 3 on the featured strip stay as flaky as before. Per the cut protocol this is not fixed here.
+- `docs/SCREENSHOTS.md` was not created; no screenshot wish list was needed.
+- No LICENSE file (see Decisions).
+- The only double hyphens in README.md and SUBMISSION.md are CLI separators (`npm run eval -- --seed 42`) and table rules inside the PROOF blocks.
+
+**Open questions**
+- Which license should the repo carry?
+- Should the featured demo strip change to one that reliably reports a rate, now that the landing scene picks its own? That touches `lib/data.ts` and DEMO.md, so it was left alone.
+
+**Next best step (Phase 6, judge-round fixes).** Redeploy and compare against the BEFORE shots defect by defect, scroll the pinned scene with reduced motion on and off at 390 and 1440 px, then look into the "accepted, no bpm" failure on the featured strip (on synthetic data only, never fold 10).
+
 ## Phase 4: judge surface, second wow, polish and security pass (2026-11-24)
 
 **Goal.** Make the live URL work on a phone and on desktop, add signature 3 (a figure tween on `/how`) and signature 2 (the landing intro), write the prize table, DELIVERY.md and SECURITY.md, and sweep for web security issues.
@@ -329,3 +395,13 @@ Identity: see IDENTITY.md (direction D9, structure S2, archetype L1, kit K2)
 - The README has the Evaluation, Who benefits / who could be harmed, Limitations, One more month, Attribution and AI use sections filled in with real numbers.
 - The 90-second demo flow works end to end: seeded strip, own photo, rejection, CSV, eval panel.
 - Wow moment rehearsed with a real printed strip photographed on the desk, showing the measured and reference bpm side by side.
+
+## Manual submit checklist (human, before the 4 December 2026 23:45 EST deadline)
+
+- [ ] Student enrollment proof for every team member, ready for Devpost (students only, age 14 or older).
+- [ ] Team member names entered in the Devpost form (they are deliberately not written in any repo file).
+- [ ] Add a LICENSE file of the team's choice, then update the "License" section in README.md.
+- [ ] Run `npm run proof`, then paste SUBMISSION.md into the Devpost form field by field.
+- [ ] Paste your own video link into the Devpost video field (at least 60 s, end to end, following DEMO.md).
+- [ ] Open https://kymora-eight.vercel.app cold on a phone (private window), click "Digitize an example strip", and check that a result appears.
+- [ ] Confirm the Phase 2 manual checklist was done (held-out set, `eval/ptbxl-results.json`, `ADAPTER_MODE=real`, redeploy) and that `npm run lookup` was run and its output committed; if not, leave the README and SUBMISSION.md wording as it is, which already says the held-out table is not generated.

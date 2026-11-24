@@ -1,8 +1,42 @@
 # Kymora
 
-Kymora reads a phone photo of a printed lead II ECG rhythm strip in the browser and turns it into a signal in millivolts and milliseconds. It measures heart rate and RR intervals, and when the photo can't support a measurement it refuses to give one.
+Kymora reads a phone photo of a printed lead II ECG rhythm strip in the browser, turns it into millivolts and milliseconds, and reports heart rate and RR intervals, or refuses when the photo cannot support a number. Millions of ECGs only exist on paper and still get measured by eye with a ruler, and patient images should not have to leave the device to become data.
 
-> Live demo: https://kymora-eight.vercel.app
+> Live demo: https://kymora-eight.vercel.app. Click "Digitize an example strip" on the landing page (DEMO.md step 1).
+
+The live URL runs with the default `ADAPTER_MODE=fake`, so its pages say "Sample data: seeded synthetic strips. The held-out PTB-XL results are not shown in this build." The digitizer itself is the real pipeline in both modes; only the held-out table needs the committed PTB-XL results file and `ADAPTER_MODE=real`.
+
+## Try it in 60 seconds
+
+1. Open https://kymora-eight.vercel.app and click "Digitize an example strip". The tilted seeded strip loads in `/digitize`, the green trace settles on the ink, and the calibration shows px/mm and the tilt.
+2. Read heart rate and mean RR next to the reference value and the signed error, then click "Download CSV (mV, 250 Hz)". The last `npm run demo:reset` proof (below) flagged the featured strip as accepted without a rate; if you see no rate there, pick another seeded strip.
+3. Pick "Motion-blurred phone photo". Kymora answers "No reliable measurement" with its quality score against the 0.60 gate and no number.
+4. Open `/how`, run the synthetic bench in the browser, and click "Show baseline" and "Show Kymora" to compare the two methods.
+5. Open `/digitize/sinus-72-tilted` and click "Copy result link". Every result has its own URL.
+
+## How the pieces fit
+
+```mermaid
+flowchart LR
+  photo["Phone photo (stays in the tab)"] --> ws["/digitize: components/workspace.tsx"]
+  synth["lib/kymora/synth.ts: seeded strips"] --> ws
+  ws --> pipe["lib/kymora/pipeline.ts: digitize()"]
+  pipe --> result["/digitize/[id]: shareable result"]
+  synth --> bench["lib/kymora/bench.ts: metrics"]
+  pipe --> bench
+  bench --> landing["/: pinned scene, computed at build"]
+  bench --> evalts["scripts/eval.ts: npm run eval"]
+  evalts --> json["eval/ptbxl-results.json"]
+  json --> held["lib/held-out.ts: zod check"]
+  held --> adapter["lib/adapter.ts: ADAPTER_MODE"]
+  adapter --> how["/how: evaluation"]
+```
+
+## Addresses
+
+| What | Where |
+|---|---|
+| Live web app | https://kymora-eight.vercel.app |
 
 ## The problem
 
@@ -120,11 +154,11 @@ Delivery notes per category are in `DELIVERY.md`. Data handling and the (empty) 
 npm install
 npm run dev        # http://localhost:3000
 npm run eval       # reproduce the evaluation table
-npm run seed       # list the 12 seeded strips and their reference heart rate
 npm test           # scoring, schema and adapter tests (node:test via tsx)
 npm run proof      # rerun the proofs and rewrite the PROOF blocks in this README
-npm run demo:reset # determinism check for the demo path, writes nothing
 ```
+
+`npm run seed` lists the 12 seeded strips and their reference heart rate; `npm run demo:reset` is covered below.
 
 No secrets or API keys are needed. One optional variable, `ADAPTER_MODE` (default `fake`, the seeded synthetic strips), selects the data source behind `lib/adapter.ts`. `real` serves the committed held-out results when `eval/ptbxl-results.json` is valid, otherwise the app stays on fake. See `.env.example`.
 
@@ -156,6 +190,8 @@ ok   ptbxl lookup: not loaded, reason=not_configured
 ```
 <!-- PROOF:END demo-reset -->
 
+The failed line is real and still open: in that run the featured strip passed the quality gate but the pipeline reported no heart rate for it. Pipeline accuracy was out of scope for the frontend phase, and `CONFIG` was not tuned to hide it. The landing scene therefore uses the featured strip only when it has a rate, and otherwise the most tilted seeded strip that does.
+
 ## Held-out set
 
 You need Python 3, a local PTB-XL copy from PhysioNet (about 2 GB on disk) and, for the default renderer, a local clone of ECG-Image-Kit. The script never downloads anything.
@@ -179,5 +215,8 @@ This writes `data/ptbxl-fold10/manifest.json`, `data/ptbxl-fold10/reference/*.js
 
 ## AI use
 
-<!-- Adjust this section to each hackathon's disclosure rules. -->
-We used AI coding assistants for scaffolding and boilerplate. Architecture, product decisions, and final code review are our own. Tools: Claude Code (scaffolding the Next.js app, first drafts of the pipeline functions, the PTB-XL set builder, the held-out eval loader, the tests and this README, which we then reviewed, tested and edited). No AI model runs inside Kymora itself.
+The hackathon rules allow AI assistants and generators and ask entrants to disclose which tools did what; one line is enough. Ours: Claude Code (Anthropic) drafted the Next.js scaffold, the pipeline functions, the PTB-XL set builder, the eval loader, the tests, the SVG illustrations and this README, and we reviewed, tested and edited all of it; no AI model runs inside Kymora itself.
+
+## License
+
+No license file is committed yet, so default copyright applies until the team adds one. Third-party datasets and methods keep their own licenses (see Attribution).

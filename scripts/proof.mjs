@@ -19,6 +19,7 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const README = join(ROOT, "README.md");
+const SUBMISSION = join(ROOT, "SUBMISSION.md");
 const TSX = join(ROOT, "node_modules", ".bin", process.platform === "win32" ? "tsx.cmd" : "tsx");
 const TIMEOUT_MS = 90_000;
 
@@ -134,6 +135,7 @@ function main() {
     ["tests", proofTests],
     ["demo-reset", proofDemoReset],
   ];
+  const bodies = [];
   for (const [name, fn] of proofs) {
     let result;
     try {
@@ -142,6 +144,7 @@ function main() {
       const reason = e instanceof Error ? e.message.split("\n")[0] : "unknown error";
       result = { body: `Not run in this build: ${reason}.`, line: `not run (${reason})` };
     }
+    bodies.push([name, result.body]);
     const next = rewrite(readme, name, result.body);
     readme = next.readme;
     console.log(`proof ${name}: ${result.line}${next.found ? "" : " (README markers missing, block not written)"}`);
@@ -150,6 +153,22 @@ function main() {
     writeFileSync(README, readme);
   } catch {
     console.log("proof: could not write README.md");
+  }
+
+  // SUBMISSION.md carries copies of some of the same blocks, so the Devpost text never drifts from README.md.
+  if (!existsSync(SUBMISSION)) return;
+  try {
+    let sub = readFileSync(SUBMISSION, "utf8");
+    let written = 0;
+    for (const [name, body] of bodies) {
+      const next = rewrite(sub, name, body);
+      sub = next.readme;
+      if (next.found) written += 1;
+    }
+    writeFileSync(SUBMISSION, sub);
+    console.log(`proof: SUBMISSION.md ${written} block(s) rewritten`);
+  } catch {
+    console.log("proof: could not update SUBMISSION.md");
   }
 }
 
