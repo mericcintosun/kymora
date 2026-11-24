@@ -290,9 +290,17 @@ function localPeaks(r: Float64Array, minLag: number): number[] {
 
 /**
  * Grid period from the autocorrelation of a projection profile. The first clear
- * peak is the 1 mm line spacing; when the faint 1 mm lines hide under strong 5 mm
- * lines we look for a sub-peak at one fifth of the first peak. The 5 mm repeat,
- * when visible, refines the estimate (five times the lag, five times the precision).
+ * peak is either the 1 mm line spacing or, when the faint 1 mm lines hide under
+ * strong 5 mm lines, the 5 mm box spacing. A 5 mm repeat is recognised by its
+ * structure rather than by height: the 1 mm lines leave a ladder of small peaks
+ * at 1/5, 2/5, 3/5 and 4/5 of it. After a light blur those peaks sit near 0.08,
+ * so an absolute height test misses them and the strip is read five times too
+ * large (8 px/mm reported as 40). The 5 mm repeat, when visible, refines the
+ * estimate (five times the lag, five times the precision).
+ *
+ * strength is the height of the first clear peak, the grid's clearest repeat. It
+ * is the same value whichever of the two spacings that peak turns out to be, so a
+ * correctly calibrated strip is not scored lower than a mis-calibrated one.
  */
 export function gridPeriod(profile: Float64Array): { pxPerMm: number; strength: number } | null {
   const maxLag = Math.min(Math.floor(profile.length / 3), Math.ceil(5 * CONFIG.maxPxPerMm) + 2);
@@ -304,14 +312,15 @@ export function gridPeriod(profile: Float64Array): { pxPerMm: number; strength: 
   let minor = first;
   const fifth = first / 5;
   if (fifth >= CONFIG.minPxPerMm) {
-    const sub = peaks.filter(
-      (L) =>
-        L < first &&
-        Math.abs(L - fifth) <= Math.max(1, fifth * 0.2) &&
-        r[L] > 0.08 &&
-        peaks.some((M) => Math.abs(M - 2 * L) <= 1)
-    );
-    if (sub.length) minor = sub.reduce((a, b) => (r[b] > r[a] ? b : a));
+    const tol = Math.max(1, fifth * 0.1);
+    // For k = 1..4, the prominent peak (localPeaks already requires a clear rise) nearest k/5 of `first`.
+    const ladder = [1, 2, 3, 4].map((k) => {
+      const near = peaks.filter((L) => L < first && Math.abs(L - k * fifth) <= tol && r[L] > 0);
+      return near.length ? near.reduce((a, b) => (Math.abs(b - k * fifth) < Math.abs(a - k * fifth) ? b : a)) : -1;
+    });
+    const rungs = ladder.filter((L) => L > 0).length;
+    // Three of the four rungs, including the 1 mm one itself, mark `first` as the 5 mm repeat.
+    if (ladder[0] > 0 && rungs >= 3) minor = ladder[0];
   }
   let pxPerMm = refinePeak(r, minor);
   const majorLag = Math.round(5 * pxPerMm);
@@ -321,7 +330,7 @@ export function gridPeriod(profile: Float64Array): { pxPerMm: number; strength: 
   }
   if (best > 0 && r[best] > r[minor] * 0.8) pxPerMm = refinePeak(r, best) / 5;
   if (pxPerMm < CONFIG.minPxPerMm || pxPerMm > CONFIG.maxPxPerMm) return null;
-  return { pxPerMm, strength: r[minor] };
+  return { pxPerMm, strength: r[first] };
 }
 
 /* 6. Trace ------------------------------------------------------------------ */
