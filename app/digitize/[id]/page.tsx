@@ -68,7 +68,7 @@ export default async function ResultPage({ params }: { params: Promise<{ id: str
         <span className="text-muted-foreground">{strip.capture}</span>
       </p>
       <div className="mt-5 max-w-[68ch]">
-        <SourceNote mode={adapter.mode} heldOut={adapter.getHeldOut()} />
+        <SourceNote mode={adapter.mode} heldOut={adapter.getHeldOut()} scope="strip" />
       </div>
 
       <div className="mt-10">

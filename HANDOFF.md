@@ -2,6 +2,17 @@
 
 You are picking up a working Next.js 15 scaffold. Read this file, then `IDENTITY.md`, then `CLAUDE.md` and `DEMO.md`, then `lib/kymora/pipeline.ts`. Start building right away; everything you need is here.
 
+## QA fix pass, round 1 (2026-11-24)
+
+Written without running anything (the agent cannot run commands). The runner's rebuild and `npm run proof` are the verification.
+
+- **proof demo-reset FAILED** (featured `sinus-72-tilted` refused). Root cause, read from the code and the live scene readout ("tilt 0.5° (true 0.4°)" on the one strip that passed, 95% rejection on the synthetic bench): `estimateSkew` searched in 0.25° steps and refined with a parabola through a cusp-shaped energy peak, so it missed by about 0.1°. Across a 2000 px strip that leaves the 1 mm horizontal lines smeared by about 3.5 px, the row-profile autocorrelation (the `gy` grid strength) collapses and quality falls under 0.60. Fix: a second 0.02° pass around the coarse best (`CONFIG.skewFineStepDeg`), parabola offset clamped to half a step. No gate or threshold changed. Risk to watch: `blurred-75-motion` must still be refused below 0.60; if the next proof shows it above the gate while still refused for another reason, fix the check's wording per the note further down, never `CONFIG`.
+- **data: "Sample data" notice on `/digitize/[id]` and `/how`.** On strip pages the note was wrong in kind: seeded strips are synthetic by design in every mode, so the page now says that in one muted line and no longer mentions the held-out set. On `/how` the held-out PTB-XL table genuinely is not in this build (see below), so one muted sentence says so and the empty state below it reads as reproduction steps. `components/source-note.tsx` gained a `scope` prop.
+
+## QA: external findings
+
+- Held-out PTB-XL table: `eval/ptbxl-results.json` does not exist in the repo and the deploy runs `ADAPTER_MODE=fake`. Producing it needs Python, `wfdb` and a local PTB-XL copy (`scripts/ptbxl/make_set.py`, then `npm run eval -- --set ptbxl`), which this agent cannot run. Not fixed; `/how` states it calmly. Once the file is committed and `ADAPTER_MODE=real` is set on Vercel, the held-out panel replaces the note with no code change.
+
 ## Phase 5: frontend pass, scene and submission package (2026-11-24)
 
 **Goal.** Make the live URL read as a finished product in its first 10 seconds (clean L1 poster, a pinned scene with real numbers, shadcn-only controls, six scene slots) and ship a Devpost package that can be pasted as is.
