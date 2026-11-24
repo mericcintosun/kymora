@@ -5,16 +5,17 @@ import { LocalResult } from "@/components/local-result";
 import { ResultView } from "@/components/result-view";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { stripById, strips } from "@/lib/data";
-import { runStrip } from "@/lib/kymora/bench";
+import { getAdapter } from "@/lib/adapter";
 
 export function generateStaticParams() {
-  return strips.map((s) => ({ id: s.id }));
+  return getAdapter()
+    .listStrips()
+    .map((s) => ({ id: s.id }));
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
-  const strip = stripById(id);
+  const strip = getAdapter().getStrip(id);
   return { title: strip ? `Result: ${strip.title}` : "Result from your photo" };
 }
 
@@ -32,11 +33,13 @@ export default async function ResultPage({ params }: { params: Promise<{ id: str
     );
   }
 
-  const strip = stripById(id);
+  const adapter = getAdapter();
+  const strip = adapter.getStrip(id);
   if (!strip) notFound();
 
   // Computed on the server with the same pipeline the browser runs.
-  const run = runStrip(strip.params);
+  const run = adapter.getRun(strip.id);
+  if (!run) notFound();
   const k = run.kymora;
   const b = run.baseline;
 

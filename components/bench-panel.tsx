@@ -57,13 +57,13 @@ function ErrorHistogram({ title, bins, barClass }: { title: string; bins: number
  * Runs the synthetic bench in the visitor's browser with the same code and seed as
  * `npm run eval`, so the numbers on this page are produced, not pasted.
  */
-export function BenchPanel() {
+export function BenchPanel({ seed = BENCH_DEFAULTS.seed, n = BENCH_DEFAULTS.n }: { seed?: number; n?: number } = {}) {
   const [state, setState] = useState<State>({ kind: "idle" });
 
   async function run() {
-    setState({ kind: "running", done: 0, total: BENCH_DEFAULTS.n });
+    setState({ kind: "running", done: 0, total: n });
     try {
-      const summary = await runBench({ onProgress: (done, total) => setState({ kind: "running", done, total }) });
+      const summary = await runBench({ seed, n, onProgress: (done, total) => setState({ kind: "running", done, total }) });
       setState({ kind: "done", summary });
     } catch (e) {
       setState({ kind: "error", message: e instanceof Error ? e.message : "The bench failed." });
@@ -75,7 +75,7 @@ export function BenchPanel() {
       <CardHeader>
         <CardTitle>Synthetic bench, run it here</CardTitle>
         <p className="max-w-[68ch] text-sm text-muted-foreground">
-          Seed {BENCH_DEFAULTS.seed}, {BENCH_DEFAULTS.n} strips with tilt, blur, shadow, noise and scale drawn from the seed.
+          Seed {seed}, {n} strips with tilt, blur, shadow, noise and scale drawn from the seed.
           About 25% are degraded on purpose. Takes roughly 10 seconds.
         </p>
       </CardHeader>

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Workspace } from "@/components/workspace";
-import { FEATURED_STRIP_ID, stripById, strips } from "@/lib/data";
+import { getAdapter } from "@/lib/adapter";
 
 export const metadata: Metadata = {
   title: "Workspace",
@@ -9,7 +9,9 @@ export const metadata: Metadata = {
 
 export default async function DigitizePage({ searchParams }: { searchParams: Promise<{ strip?: string }> }) {
   const { strip } = await searchParams;
-  const initialId = strip && stripById(strip) ? strip : FEATURED_STRIP_ID;
+  const adapter = getAdapter();
+  const strips = adapter.listStrips();
+  const initialId = strip && adapter.getStrip(strip) ? strip : adapter.featuredStripId;
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-12">

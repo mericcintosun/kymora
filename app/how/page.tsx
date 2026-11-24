@@ -4,6 +4,7 @@ import { BenchPanel } from "@/components/bench-panel";
 import { SceneSlot } from "@/components/scene-slot";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getAdapter } from "@/lib/adapter";
 import { CONFIG } from "@/lib/kymora/pipeline";
 
 export const metadata: Metadata = {
@@ -45,6 +46,8 @@ const steps = [
 ];
 
 export default function HowPage() {
+  const bench = getAdapter().getBenchConfig();
+
   return (
     <div className="mx-auto max-w-6xl px-5 py-12">
       <h1 className="max-w-[18ch] text-5xl font-bold sm:text-6xl">How Kymora measures, and how we check it</h1>
@@ -88,7 +91,7 @@ export default function HowPage() {
           configuration; its loader is wired in <code>scripts/eval.ts</code> and its numbers are added to the README once
           that set is generated.
         </p>
-        <BenchPanel />
+        <BenchPanel seed={bench.seed} n={bench.n} />
         <Card>
           <CardHeader>
             <CardTitle>Reproduce it</CardTitle>
