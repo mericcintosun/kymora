@@ -7,7 +7,7 @@
 import { FEATURED_STRIP_ID, seedStrips, stripById, type StripSeed } from "./data/seed";
 import { BENCH_DEFAULTS, benchStrips, evaluateCase, runStrip, summarize, type BenchSummary, type StripRun } from "./kymora/bench";
 import { referenceFor } from "./kymora/synth";
-import type { HeldOutResults } from "./schemas";
+import type { HeldOutResults, PtbxlLookup } from "./schemas";
 import type { AdapterMode, BenchConfig, DigitizeResult, StripSummary } from "./types";
 
 export interface KymoraAdapter {
@@ -29,6 +29,11 @@ export interface KymoraAdapter {
   getBench(): BenchSummary;
   /** The committed held-out PTB-XL fold 10 results, or null when this source has none. */
   getHeldOut(): HeldOutResults | null;
+  /**
+   * The ecg_id to reference lookup for dropped PTB-XL photos, or null when this source has
+   * none. Null is the documented fallback: no lookup means no reference, the result still renders.
+   */
+  getReferenceLookup(): PtbxlLookup | null;
 }
 
 function summaryOf(strip: StripSeed): StripSummary {
@@ -82,4 +87,5 @@ export const fakeAdapter: KymoraAdapter = {
     return summarize(seed, benchStrips(seed, n).map(evaluateCase));
   },
   getHeldOut: () => null,
+  getReferenceLookup: () => null,
 };

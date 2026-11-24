@@ -15,6 +15,12 @@ const brandFiles = fs.existsSync(brandDir)
 
 const nextConfig: NextConfig = {
   env: { NEXT_PUBLIC_BRAND_FILES: brandFiles.join(",") },
+  // /digitize renders on request and reads these with node:fs (lib/ptbxl-lookup.ts,
+  // lib/held-out.ts), which file tracing cannot see. Top-level key in Next 15
+  // (node_modules/next/dist/server/config-shared.d.ts). Missing files are simply skipped.
+  outputFileTracingIncludes: {
+    "/digitize": ["./eval/ptbxl-lookup.json", "./eval/ptbxl-results.json"],
+  },
 };
 
 export default nextConfig;

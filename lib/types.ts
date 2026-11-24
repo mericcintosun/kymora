@@ -8,7 +8,7 @@ export type { StressTest, StripSeed } from "./data";
 export type { BenchSummary, CaseResult, MethodScore, Row as BenchRow } from "./kymora/bench";
 export type { Measurement } from "./kymora/pipeline";
 export type { StripParams } from "./kymora/synth";
-export type { HeldOutResults } from "./schemas";
+export type { HeldOutResults, PtbxlLookup } from "./schemas";
 export type { ApiError, ErrorCode } from "./errors";
 
 export type AdapterMode = "fake" | "real";

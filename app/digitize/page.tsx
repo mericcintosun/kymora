@@ -12,6 +12,8 @@ export default async function DigitizePage({ searchParams }: { searchParams: Pro
   const adapter = getAdapter();
   const strips = adapter.listStrips();
   const initialId = strip && adapter.getStrip(strip) ? strip : adapter.featuredStripId;
+  // Server data, one source: the PTB-XL reference lookup (null in fake mode or when not generated).
+  const lookup = adapter.getReferenceLookup();
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-12">
@@ -21,7 +23,7 @@ export default async function DigitizePage({ searchParams }: { searchParams: Pro
         ruler. Every result gets its own page you can link to.
       </p>
       <div className="mt-10">
-        <Workspace strips={strips} initialId={initialId} />
+        <Workspace strips={strips} initialId={initialId} featuredId={adapter.featuredStripId} lookup={lookup} />
       </div>
     </div>
   );

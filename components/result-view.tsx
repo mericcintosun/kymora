@@ -20,6 +20,8 @@ interface ResultViewProps {
   raster?: Raster;
   params?: StripParams;
   reference?: ResultReference;
+  /** Where the reference comes from, for example "PTB-XL fold 10 reference, ecg_id 9". Shown only with a reference. */
+  referenceLabel?: string;
   /** Path of this result's own page. */
   resultPath?: string;
   /** Hide the "open result page" link when we are already on it. */
@@ -27,7 +29,7 @@ interface ResultViewProps {
 }
 
 /** The photo with the digitized trace laid over it, the numbers, and the export controls. */
-export function ResultView({ label, measurement: m, raster, params, reference, resultPath, onResultPage }: ResultViewProps) {
+export function ResultView({ label, measurement: m, raster, params, reference, referenceLabel, resultPath, onResultPage }: ResultViewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [copied, setCopied] = useState(false);
 
@@ -118,6 +120,7 @@ export function ResultView({ label, measurement: m, raster, params, reference, r
                 {hrDelta !== null && ` (error ${hrDelta >= 0 ? "+" : ""}${hrDelta.toFixed(1)})`}
               </p>
             )}
+            {reference && referenceLabel && <p className="mt-1 text-xs text-muted-foreground">{referenceLabel}</p>}
           </CardContent>
         </Card>
         <Card>

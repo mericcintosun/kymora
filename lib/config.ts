@@ -21,6 +21,8 @@ export const HELD_OUT = {
   dir: "data/ptbxl-fold10",
   manifestPath: "data/ptbxl-fold10/manifest.json",
   resultsPath: "eval/ptbxl-results.json",
+  /** Compact ecg_id to reference lookup for dropped photos, written by `npm run lookup`. */
+  lookupPath: "eval/ptbxl-lookup.json",
   maxRecords: 300,
   seed: 42,
 } as const;

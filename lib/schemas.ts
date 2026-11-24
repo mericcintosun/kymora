@@ -75,7 +75,43 @@ export const heldOutResultsSchema = z.object({
   ),
 });
 
+/**
+ * The compact PTB-XL reference lookup (eval/ptbxl-lookup.json, written by `npm run lookup`
+ * from the manifest). Keys are the ecg_id as a plain number string, for example "9".
+ */
+export const ptbxlLookupSchema = z.object({
+  source: z.string().min(1),
+  records: z.record(
+    z.string().regex(/^[1-9][0-9]{0,4}$/),
+    z.object({
+      heartRateBpm: z.number().positive(),
+      meanRrMs: z.number().positive(),
+    })
+  ),
+});
+
+/**
+ * A local result the workspace stored in this tab's sessionStorage (key kymora:<id>).
+ * Checks the fields ResultView reads first; the rest of Measurement passes through.
+ */
+export const storedLocalResultSchema = z.object({
+  label: z.string().min(1),
+  dataUrl: z.string().nullable(),
+  measurement: z
+    .object({
+      accepted: z.boolean(),
+      quality: z.number(),
+      reasons: z.array(z.string()),
+      trace: z.array(z.tuple([z.number(), z.number()])),
+      peaks: z.array(z.tuple([z.number(), z.number()])),
+      width: z.number().positive(),
+      height: z.number().positive(),
+    })
+    .passthrough(),
+});
+
 export type Renderer = z.infer<typeof rendererSchema>;
+export type PtbxlLookup = z.infer<typeof ptbxlLookupSchema>;
 export type Manifest = z.infer<typeof manifestSchema>;
 export type ManifestRecord = z.infer<typeof manifestRecordSchema>;
 export type ReferenceFile = z.infer<typeof referenceFileSchema>;
