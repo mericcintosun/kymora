@@ -2,7 +2,7 @@
 
 Kymora reads a phone photo of a printed lead II ECG rhythm strip in the browser and turns it into a signal in millivolts and milliseconds. It measures heart rate and RR intervals, and when the photo can't support a measurement it refuses to give one.
 
-> Live demo: https://kymora.vercel.app
+> Live demo: https://kymora-eight.vercel.app
 
 ## The problem
 
