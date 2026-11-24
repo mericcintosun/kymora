@@ -73,7 +73,7 @@ Not run in this build: data/ptbxl-fold10 has not been generated (needs Python, w
 
 <!-- PROOF:BEGIN tests -->
 ```text
-npm test: 14 tests, 14 passed, 0 failed (3 files, node:test via tsx)
+npm test: 21 tests, 21 passed, 0 failed (4 files, node:test via tsx)
 ```
 <!-- PROOF:END tests -->
 
@@ -110,11 +110,38 @@ npm run eval       # reproduce the evaluation table
 npm run seed       # list the 12 seeded strips and their reference heart rate
 npm test           # scoring, schema and adapter tests (node:test via tsx)
 npm run proof      # rerun the proofs and rewrite the PROOF blocks in this README
+npm run demo:reset # determinism check for the demo path, writes nothing
 ```
 
 No secrets or API keys are needed. One optional variable, `ADAPTER_MODE` (default `fake`, the seeded synthetic strips), selects the data source behind `lib/adapter.ts`. `real` serves the committed held-out results when `eval/ptbxl-results.json` is valid, otherwise the app stays on fake. See `.env.example`.
 
 Routes: `/` story, `/digitize` workspace, `/digitize/<strip-id>` shareable result, `/how` method and evaluation.
+
+## Reset and walk the demo
+
+```bash
+npm run demo:reset   # print the seed, rerun the two demo strips 3 times each, check accept and refuse
+npm run lookup       # after the held-out set exists: write eval/ptbxl-lookup.json from the manifest
+```
+
+`npm run demo:reset` writes nothing. It lists the 12 seeded strips, runs the featured strip and `blurred-75-motion` three times each and requires identical results (runtime excluded), checks that the featured strip is accepted and the blurred one is refused below the 0.60 quality gate, and reports whether `eval/ptbxl-results.json` and `eval/ptbxl-lookup.json` load or which reason code says why not. It exits 1 on any failed check.
+
+There is no database, so there is no migration or schema push. There is no server state to clear either: a dropped photo's result lives only in the tab's `sessionStorage`, so a private window is the clean start for a walk through `DEMO.md`.
+
+`npm run lookup` reads `data/ptbxl-fold10/manifest.json` and writes the compact ecg_id to reference lookup. Without a manifest it prints one line and writes nothing. With the lookup committed and `ADAPTER_MODE=real`, a dropped PTB-XL photo named after its ecg_id (`00009.png`, `ecg_00009_photo.jpeg`) shows "PTB-XL fold 10 reference, ecg_id 9" and the signed error beside the measured rate. Phone camera names such as `IMG_20241103.jpg` never match.
+
+<!-- PROOF:BEGIN demo-reset -->
+```text
+npm run demo:reset: 6 checks, 1 failed
+
+ok   sinus-72-tilted: 3 runs give identical results
+ok   blurred-75-motion: 3 runs give identical results
+FAIL sinus-72-tilted: accepted, no bpm, mean RR none ms
+ok   blurred-75-motion: refused, quality 0.44 against the 0.6 gate
+ok   held-out results: not loaded, reason=not_configured
+ok   ptbxl lookup: not loaded, reason=not_configured
+```
+<!-- PROOF:END demo-reset -->
 
 ## Held-out set
 

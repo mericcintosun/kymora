@@ -7,6 +7,7 @@
  *   eval-synthetic  npm run eval -- --seed 42 --n 60 --out eval/proof-synthetic.json
  *   eval-ptbxl      the rows of the committed eval/ptbxl-results.json, if present
  *   tests           the pass or fail summary of npm test
+ *   demo-reset      the check lines of npm run demo:reset (determinism, accept, refuse)
  *
  * Uses only node: modules and node_modules/.bin/tsx. Never throws, always exits 0,
  * prints one summary line per proof and writes nothing outside the repo.
@@ -100,6 +101,16 @@ function proofTests() {
   return { body: fence([summary]), line: failed === 0 ? `ok (${summary})` : `FAILED (${summary})` };
 }
 
+function proofDemoReset() {
+  if (!existsSync(TSX)) return { body: "Not run in this build: node_modules/.bin/tsx is missing (run npm install first).", line: "not run (tsx missing)" };
+  const r = run(["scripts/reset.ts"]);
+  const checks = r.stdout.split("\n").filter((l) => l.startsWith("ok  ") || l.startsWith("FAIL"));
+  if (!checks.length) return { body: `Not run in this build: npm run demo:reset printed no checks (${r.reason || "no output"}).`, line: "not run (no checks)" };
+  const failed = checks.filter((l) => l.startsWith("FAIL")).length;
+  const summary = `npm run demo:reset: ${checks.length} checks, ${failed} failed`;
+  return { body: fence([summary, "", ...checks]), line: failed === 0 && r.ok ? `ok (${summary})` : `FAILED (${summary})` };
+}
+
 function rewrite(readme, name, body) {
   const begin = `<!-- PROOF:BEGIN ${name} -->`;
   const end = `<!-- PROOF:END ${name} -->`;
@@ -121,6 +132,7 @@ function main() {
     ["eval-synthetic", proofSynthetic],
     ["eval-ptbxl", proofPtbxl],
     ["tests", proofTests],
+    ["demo-reset", proofDemoReset],
   ];
   for (const [name, fn] of proofs) {
     let result;

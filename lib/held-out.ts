@@ -11,14 +11,16 @@ import { HELD_OUT, LOG_PREFIX } from "./config";
 import type { ErrorCode } from "./errors";
 import { heldOutResultsSchema, type HeldOutResults } from "./schemas";
 
-const cache = new Map<string, HeldOutResults | null>();
+export type HeldOutStatus = { results: HeldOutResults; reason: null } | { results: null; reason: ErrorCode };
 
-function unavailable(reason: ErrorCode): null {
+const cache = new Map<string, HeldOutStatus>();
+
+function unavailable(reason: ErrorCode): HeldOutStatus {
   console.log(`${LOG_PREFIX} held-out unavailable reason=${reason}`);
-  return null;
+  return { results: null, reason };
 }
 
-function read(path: string): HeldOutResults | null {
+function read(path: string): HeldOutStatus {
   let raw: string;
   try {
     raw = readFileSync(resolve(process.cwd(), path), "utf8");
@@ -34,18 +36,24 @@ function read(path: string): HeldOutResults | null {
   const parsed = heldOutResultsSchema.safeParse(json);
   if (!parsed.success) return unavailable("invalid_input");
   console.log(`${LOG_PREFIX} held-out loaded n=${parsed.data.n} renderer=${parsed.data.renderer}`);
-  return parsed.data;
+  return { results: parsed.data, reason: null };
+}
+
+/** The results plus the reason code when there are none. Read and validated once per path and process. */
+export function loadHeldOutStatus(path: string = HELD_OUT.resultsPath): HeldOutStatus {
+  const hit = cache.get(path);
+  if (hit) return hit;
+  let status: HeldOutStatus;
+  try {
+    status = read(path);
+  } catch {
+    status = unavailable("parse_failure");
+  }
+  cache.set(path, status);
+  return status;
 }
 
 /** Reads and validates the results file once per path and process. */
 export function loadHeldOutResults(path: string = HELD_OUT.resultsPath): HeldOutResults | null {
-  if (cache.has(path)) return cache.get(path) ?? null;
-  let result: HeldOutResults | null;
-  try {
-    result = read(path);
-  } catch {
-    result = unavailable("parse_failure");
-  }
-  cache.set(path, result);
-  return result;
+  return loadHeldOutStatus(path).results;
 }

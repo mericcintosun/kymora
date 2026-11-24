@@ -10,6 +10,8 @@ Read `IDENTITY.md` first (it overrides taste), then `HANDOFF.md`, then `DEMO.md`
 - `npm run seed`: prints the 12 seeded strip ids and their reference bpm. Writes nothing, so it is idempotent.
 - `npm test`: `tsx --test tests/*.test.ts` (scoring, schemas, adapter selector).
 - `npm run proof`: reruns the proofs and rewrites the `PROOF` blocks in README.md. Always exits 0.
+- `npm run lookup`: writes `eval/ptbxl-lookup.json` (ecg_id to reference HR and mean RR) from `data/ptbxl-fold10/manifest.json`. No manifest: one line, nothing written, exit 0.
+- `npm run demo:reset`: prints the seed, reruns the featured and `blurred-75-motion` strips 3 times each, checks determinism, accept and refuse, and reports the PTB-XL file status. Writes nothing; exits 1 on a failed check.
 
 ## Data seam
 
