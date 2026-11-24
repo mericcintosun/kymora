@@ -88,9 +88,9 @@ Kymora synthetic bench: seed 42, 60 strips
 
 method                                     n   HR MAE (bpm)  RR MAE (ms)  SNR (dB)  rejected
 -----------------------------------------  --  ------------  -----------  --------  --------
-Kymora (grid calibration + quality gate)   15  0.08          1.6          13.27     75.0%   
+Kymora (grid calibration + quality gate)   33  0.07          1.6          13.43     45.0%   
 Baseline (300 DPI assumed, darkest pixel)  59  39.44         277.5        -3.20     1.7%    
-Baseline on the strips Kymora accepted     15  36.38         233.7        -3.76     0.0%    
+Baseline on the strips Kymora accepted     33  44.73         272.9        -3.54     0.0%    
 
 config: {"maxSkewDeg":8,"skewStepDeg":0.25,"skewFineStepDeg":0.02,"minPxPerMm":3,"maxPxPerMm":40,"gridRedMargin":6,"inkLumRatio":0.6,"inkRedMargin":25,"minColumnMass":15,"fs":250,"qualityThreshold":0.6,"minDurationS":4,"minHeartRate":25,"maxHeartRate":220}
 ```
@@ -106,7 +106,7 @@ Not run in this build: data/ptbxl-fold10 has not been generated (needs Python, w
 
 <!-- PROOF:BEGIN tests -->
 ```text
-npm test: 21 tests, 21 passed, 0 failed (4 files, node:test via tsx)
+npm test: 23 tests, 23 passed, 0 failed (5 files, node:test via tsx)
 ```
 <!-- PROOF:END tests -->
 
@@ -178,18 +178,18 @@ There is no database, so there is no migration or schema push. There is no serve
 
 <!-- PROOF:BEGIN demo-reset -->
 ```text
-npm run demo:reset: 6 checks, 1 failed
+npm run demo:reset: 6 checks, 0 failed
 
 ok   sinus-72-tilted: 3 runs give identical results
 ok   blurred-75-motion: 3 runs give identical results
-FAIL sinus-72-tilted: expected accepted, got refused (quality 0.89, grid 39.98 px/mm): Only 2.0 s of trace. A rhythm measurement needs at least 4 s.
+ok   sinus-72-tilted: accepted, 73 bpm, mean RR 822 ms, grid 8 px/mm
 ok   blurred-75-motion: refused, quality 0.44 against the 0.6 gate
 ok   held-out results: not loaded, reason=not_configured
 ok   ptbxl lookup: not loaded, reason=not_configured
 ```
 <!-- PROOF:END demo-reset -->
 
-The block above is rewritten on every proof run and is the current state. Two earlier runs failed the featured-strip check. First, the coarse 0.25° tilt search missed by about 0.1° and the strip fell under the quality gate; `estimateSkew` now adds a 0.02° pass. Second, after a light blur the 1 mm lines leave autocorrelation peaks near 0.08, below the old height test, so `gridPeriod` took the 5 mm box spacing for the millimetre (40 px/mm on an 8 px/mm photo), the 10 s strip read as 2 s and was refused. `gridPeriod` now recognises the 5 mm repeat by its ladder of 1 mm peaks at 1/5 to 4/5 of its lag. No gate or threshold in `CONFIG` was changed. The landing scene still uses the featured strip only when it has a rate, and otherwise the most tilted seeded strip that does.
+The block above is rewritten on every proof run and is the current state. Two earlier runs failed the featured-strip check. First, the coarse 0.25° tilt search missed by about 0.1° and the strip fell under the quality gate; `estimateSkew` now adds a 0.02° pass. Second, after a light blur the 1 mm lines leave autocorrelation peaks near 0.08, below the old height test, so `gridPeriod` took the 5 mm box spacing for the millimetre (40 px/mm on an 8 px/mm photo), the 10 s strip read as 2 s and was refused. `gridPeriod` now recognises the 5 mm repeat by its ladder of 1 mm peaks at 1/5 to 4/5 of its lag. Those peaks can sit below zero, because the strong 5 mm lines pull the whole mean-subtracted autocorrelation down, so the ladder test asks only for a clear local rise, never a positive value (`tests/grid.test.ts`). No gate or threshold in `CONFIG` was changed. The landing scene still uses the featured strip only when it has a rate, and otherwise the most tilted seeded strip that does.
 
 ## Held-out set
 
